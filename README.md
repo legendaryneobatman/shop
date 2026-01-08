@@ -1,5 +1,3 @@
-# go-REST-API
+# shop
 
-backend server written on go
-
-from this tutorial https://www.youtube.com/watch?v=xJ7NC8xeJus&list=PLbTTxxr-hMmyFAvyn7DeOgNRN8BQdjFm8&index=4&ab_channel=MaksimZhashkevych
+I realized that I haven't build an online store for 4 years...
