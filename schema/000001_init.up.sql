@@ -9,16 +9,18 @@ CREATE TABLE users
 CREATE TABLE lists
 (
     id          serial                                      not null unique,
-    user_id     int references users (id) on delete cascade not null,
     title       varchar(255)                                not null,
-    description varchar(255)
+    description varchar(255),
+
+    user_id     int references users (id) on delete cascade not null
 );
 
 CREATE TABLE todos
 (
     id          serial       not null unique,
-    list_id     int          references lists (id) on delete cascade,
     title       varchar(255) not null,
     description varchar(255),
-    done        boolean      not null default false
+    done        boolean      not null default false,
+
+    list_id     int references lists (id) on delete cascade
 );

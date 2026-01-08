@@ -1,0 +1,38 @@
+services:
+  app:
+    build:
+      dockerfile: Dockerfile
+      context: ./
+    ports:
+      - "8000:8000"
+    environment:
+      SHARED_DB_URL: postgres://${SHARED_DB_USER}:${SHARED_DB_PASSWORD}@db:${SHARED_DB_PORT}/${SHARED_DB}?sslmode=disable
+      DB_PASSWORD: ${SHARED_DB_PASSWORD}
+    working_dir: /app
+    volumes:
+      - ./:/app
+    depends_on:
+      - db
+    networks:
+      app-network:
+
+
+  db:
+    image: postgres:15-alpine
+    restart: always
+    environment:
+      - POSTGRES_USER=${SHARED_DB_USER}
+      - POSTGRES_PASSWORD=${SHARED_DB_PASSWORD}
+      - SHARED_DB_URL=postgres://${SHARED_DB_USER}:${SHARED_DB_PASSWORD}@db:${SHARED_DB_PORT}/${SHARED_DB}?sslmode=disable
+    ports:
+      - "${SHARED_DB_PORT}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    networks:
+      app-network:
+
+networks:
+  app-network:
+    driver: bridge
+volumes:
+  postgres_data:

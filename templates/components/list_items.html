@@ -1,0 +1,24 @@
+{{ define "list-elements" }}
+    {{ range .lists }}
+    <div class="p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:shadow-md transition-shadow mb-3 flex justify-between items-center">
+        <div>
+            <span class="text-sm font-mono text-gray-400">#{{ .Id }}</span>
+            <h3 class="text-lg font-semibold text-gray-800">{{ .Title }}</h3>
+            <p class="text-gray-600">{{ .Description }}</p>
+        </div>
+        <div class="text-blue-500">→</div>
+    </div>
+    {{ end }}
+
+    {{ if .HasMore }}
+    <div id="load-more-container" class="flex justify-center mt-6">
+        <button class="px-6 py-2 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors shadow-lg active:transform active:scale-95"
+                hx-get="/list?offset={{ .NextOffset }}&limit=10"
+                hx-target="#load-more-container"
+                hx-swap="outerHTML"
+                hx-indicator="#spinner">
+            Загрузить еще
+        </button>
+    </div>
+    {{ end }}
+{{ end }}

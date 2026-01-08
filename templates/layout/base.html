@@ -1,0 +1,30 @@
+{{ define "base" }}
+    <!DOCTYPE html>
+    <html lang="ru">
+        <head>
+            <meta charset="UTF-8">
+            <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
+            <script
+                    src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
+                    integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
+                    crossorigin="anonymous"
+            ></script>
+            <title>{{ .PageTitle }}</title>
+        </head>
+        <body>
+            <header>
+                <nav>Мой Магазин</nav>
+            </header>
+
+            <main>
+                {{ block "content" . }}
+                    <p>Здесь должно быть содержимое страницы...</p>
+                {{ end }}
+            </main>
+
+            <footer>
+                &copy; 2025 Go-Shop
+            </footer>
+        </body>
+    </html>
+{{ end }}
