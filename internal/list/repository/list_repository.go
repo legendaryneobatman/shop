@@ -15,8 +15,8 @@ func NewListRepository(db *sqlx.DB) *ListRepository {
 	return &ListRepository{db: db}
 }
 
-func (listRepository *ListRepository) Create(userId int, list entity.List) (int, error) {
-	tx, err := listRepository.db.Begin()
+func (lr *ListRepository) Create(userId int, list entity.List) (int, error) {
+	tx, err := lr.db.Begin()
 	if err != nil {
 		return 0, err
 	}
@@ -27,18 +27,21 @@ func (listRepository *ListRepository) Create(userId int, list entity.List) (int,
 	var description string
 	createListQuery := fmt.Sprintf("INSERT INTO %s (user_id, title, description) VALUES ($1, $2, $3) RETURNING *", schema.TableNames.List)
 	row := tx.QueryRow(createListQuery, userId, list.Title, list.Description)
-	if err := row.Scan(&id, &user_id, &title, &description); err != nil {
-		tx.Rollback()
+	if err := row.Scan(&id, &title, &description, &user_id); err != nil {
+		err := tx.Rollback()
+		if err != nil {
+			return 0, err
+		}
 		return 0, err
 	}
 
 	return id, tx.Commit()
 }
 
-func (listRepository *ListRepository) GetAll(userId int) ([]entity.List, error) {
+func (lr *ListRepository) GetAll(userId int) ([]entity.List, error) {
 	var lists []entity.List
 	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id = $1", schema.TableNames.List)
-	rows, err := listRepository.db.Query(query, userId)
+	rows, err := lr.db.Query(query, userId)
 	if err != nil {
 		return nil, err
 	}
@@ -56,20 +59,20 @@ func (listRepository *ListRepository) GetAll(userId int) ([]entity.List, error) 
 	return lists, nil
 }
 
-func (listRepository *ListRepository) GetById(listId string) (entity.List, error) {
+func (lr *ListRepository) GetById(listId string) (entity.List, error) {
 	var list entity.List
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id = $1", schema.TableNames.List)
-	row := listRepository.db.QueryRow(query, listId)
+	row := lr.db.QueryRow(query, listId)
 	if err := row.Scan(&list.Id, &list.UserId, &list.Title, &list.Description); err != nil {
 		return entity.List{}, err
 	}
 	return list, nil
 }
 
-func (listRepository *ListRepository) Update(listId string, input entity.List) (entity.List, error) {
+func (lr *ListRepository) Update(listId string, input entity.List) (entity.List, error) {
 	var list entity.List
 	query := fmt.Sprintf("UPDATE %s SET title = $1, description = $2 WHERE id = $3 RETURNING *", schema.TableNames.List)
-	row := listRepository.db.QueryRow(query, input.Title, input.Description, listId)
+	row := lr.db.QueryRow(query, input.Title, input.Description, listId)
 	if err := row.Scan(&list.Id, &list.UserId, &list.Title, &list.Description); err != nil {
 		return entity.List{}, err
 	}
@@ -77,7 +80,7 @@ func (listRepository *ListRepository) Update(listId string, input entity.List) (
 	return list, nil
 }
 
-func (r *ListRepository) GetWithPagination(userId int, limit int, offset int) ([]entity.List, error) {
+func (lr *ListRepository) GetWithPagination(userId int, limit int, offset int) ([]entity.List, error) {
 	var lists []entity.List
 
 	query := fmt.Sprintf(`
@@ -89,6 +92,6 @@ func (r *ListRepository) GetWithPagination(userId int, limit int, offset int) ([
 		schema.TableNames.List,
 	)
 
-	err := r.db.Select(&lists, query, userId, limit, offset)
+	err := lr.db.Select(&lists, query, userId, limit, offset)
 	return lists, err
 }

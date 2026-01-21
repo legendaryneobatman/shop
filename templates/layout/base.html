@@ -12,9 +12,7 @@
             <title>{{ .PageTitle }}</title>
         </head>
         <body>
-            <header>
-                <nav>Мой Магазин</nav>
-            </header>
+            {{ template "header" . }}
 
             <main>
                 {{ block "content" . }}
@@ -22,9 +20,7 @@
                 {{ end }}
             </main>
 
-            <footer>
-                &copy; 2025 Go-Shop
-            </footer>
+            {{ template "footer" . }}
         </body>
     </html>
 {{ end }}

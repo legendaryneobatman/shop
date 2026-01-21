@@ -11,9 +11,12 @@
     ></script>
     <title>Title</title>
 </head>
-<body class="bg-gray-50 min-h-screen">
+<body id="top" class="min-h-screen h-auto grid grid-rows-[auto, max-content, auto] content-between">
 {{ template "header" . }}
-{{ template "sign-in-form" .}}
+<div class="container mx-auto p-4 flex items-center justify-center">
+    {{ template "sign-in-form" .}}
+</div>
+{{ template "footer" . }}
 </body>
 </html>
 {{end}}

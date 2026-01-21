@@ -5,6 +5,7 @@ import (
 	"github.com/sirupsen/logrus"
 	authService "go-shop/internal/auth/service"
 	"go-shop/internal/auth/transport"
+	"go-shop/internal/list/entity"
 	listService "go-shop/internal/list/service"
 	"net/http"
 	"strconv"
@@ -33,7 +34,8 @@ func (h *WebService) IndexPage(c *gin.Context) {
 	data, err := h.getDataForList(c)
 
 	if err != nil {
-		logrus.Fatalf("Failed to prepare data for list page, %s", err.Error())
+		logrus.Errorf("Failed to prepare data for list page, %s", err.Error())
+		return
 	}
 
 	if c.GetHeader("HX-Request") == "true" {
@@ -46,28 +48,34 @@ func (h *WebService) IndexPage(c *gin.Context) {
 }
 
 func (h *WebService) getDataForList(c *gin.Context) (gin.H, error) {
+	const DefaultOffset = 0
+	const Limit = 10
+
+	defaultData := gin.H{
+		"lists":      []entity.List{},
+		"NextOffset": DefaultOffset + Limit,
+		"HasMore":    false,
+	}
+
+	data := defaultData
+
 	userId, err := h.authMiddleware.GetUserId(c)
 	if err != nil {
 		logrus.Errorf("Failed to get user id in index page %s", err.Error())
-		return nil, err
+		return data, err
 	}
-
-	offsetStr := c.DefaultQuery("offset", "0")
+	offsetStr := c.DefaultQuery("offset", strconv.Itoa(DefaultOffset))
 	offset, _ := strconv.Atoi(offsetStr)
-	limit := 10
 
-	lists, err := h.listService.GetWithPagination(userId, limit, offset)
+	lists, err := h.listService.GetWithPagination(userId, Limit, offset)
 	if err != nil {
 		logrus.Errorf("Ошибочка: %s", err.Error())
 		c.AbortWithStatus(500)
-		return nil, err
+		return data, err
 	}
-
-	data := gin.H{
-		"lists":      lists,
-		"NextOffset": offset + limit,
-		"HasMore":    len(lists) == limit,
-	}
+	data["lists"] = lists
+	data["NextOffset"] = offset + Limit
+	data["HasMore"] = len(lists) == Limit
 
 	return data, nil
 }
@@ -77,11 +85,11 @@ func (h *WebService) SignInPage(c *gin.Context) {
 	c.HTML(http.StatusOK, "sign-in", data)
 }
 
-func (h *WebService) Login(c *gin.Context) {
+func (h *WebService) HandleSignIn(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
-	token, err := h.authService.VerifyUser(username, password)
+	token, err := h.authService.Authenticate(username, password)
 	if err != nil {
 		logrus.Errorf("Error when verifying user %s", err.Error())
 		c.HTML(http.StatusOK, "content", gin.H{"Error": "Неверный логин или пароль"})

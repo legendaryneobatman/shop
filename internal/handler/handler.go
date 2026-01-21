@@ -35,8 +35,8 @@ func (h *Handler) Init(router *gin.Engine) {
 	h.authMiddleware = authMiddleware
 	h.authService = authServ
 
-	webGroup := router.Group("", h.authMiddleware.UserIdentity)
-	apiPGroup := router.Group("/api", h.authMiddleware.UserIdentity)
+	webGroup := router.Group("", h.authMiddleware.WebGuard)
+	apiPGroup := router.Group("/api", h.authMiddleware.ApiGuard)
 	apiGroup := router.Group("/api")
 	authGroup := router.Group("/")
 

@@ -1,22 +1,36 @@
 package main
 
 import (
-	"encoding/json"
 	"fmt"
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
 	"go-shop/internal/auth/repository"
 	"go-shop/internal/list/entity"
 	repo2 "go-shop/internal/list/repository"
 	entity2 "go-shop/internal/user/entity"
 	"log"
-	"math/rand"
 	"os"
 )
 
+type Seeder struct {
+	listRepo *repo2.ListRepository
+	authRepo *repository.AuthRepository
+}
+
+func NewSeeder(_listRepo *repo2.ListRepository, _authRepo *repository.AuthRepository) *Seeder {
+	return &Seeder{
+		listRepo: _listRepo,
+		authRepo: _authRepo,
+	}
+}
+
 func main() {
-	SIZE := 100
+	const (
+		UserCount        = 10
+		ListPerUserCount = 100
+	)
 
 	db, err := sqlx.Connect("pgx", os.Getenv("SHARED_DB_URL"))
 	if err != nil {
@@ -25,60 +39,92 @@ func main() {
 	defer func(db *sqlx.DB) {
 		_ = db.Close()
 	}(db)
-
 	log.Println("Connected to DB for seeding...")
 
-	userIds, err := seedUsers(db, SIZE)
+	listRepo := repo2.NewListRepository(db)
+	authRepo := repository.NewAuthRepository(db)
+
+	seed := NewSeeder(listRepo, authRepo)
+
+	//err = seed.SeedUsers(UserCount)
+	//if err != nil {
+	//	logrus.Errorf("Error while seeding Users %s", err.Error())
+	//}
+
+	err = seed.SeedLists(ListPerUserCount)
 	if err != nil {
 		return
 	}
-	seedLists(db, SIZE, *userIds)
 
 	log.Println("Seeding completed successfully!")
 }
 
-func createExampleList(userId int) *entity.List {
-	return &entity.List{
-		UserId:      userId,
-		Title:       gofakeit.BookTitle(),
-		Description: gofakeit.ProductDescription(),
+func (s *Seeder) SeedLists(countPerUser int) error {
+	const DefaultCount = 100
+	users, err := s.authRepo.GetAll()
+	if err != nil {
+		logrus.Errorf("Error when try to get users for seedLists: %s", err.Error())
 	}
-}
 
-func seedLists(db *sqlx.DB, size int, userIds []int) {
-	repo := repo2.NewListRepository(db)
+	count := (func() int {
+		if countPerUser > 0 {
+			return countPerUser
+		}
 
-	userId := userIds[rand.Intn(size)]
+		return DefaultCount
+	})()
 
-	for range make([]int, size) {
-		_, err := repo.Create(userId, *createExampleList(userId))
-		if err != nil {
-			return
+	fmt.Println(len(users))
+	for _, userEl := range users {
+		newList := entity.List{
+			UserId:      userEl.Id,
+			Title:       gofakeit.BookTitle(),
+			Description: gofakeit.ProductDescription(),
+		}
+		for range count {
+			_, err := s.listRepo.Create(userEl.Id, newList)
+
+			logrus.WithFields(logrus.Fields{
+				"UserId":      newList.UserId,
+				"Title":       newList.Title,
+				"Description": newList.Description,
+			}).Info("Created list content")
+
+			if err != nil {
+				fmt.Printf("Error in seedingLists %s", err.Error())
+				return err
+			}
 		}
 	}
 
+	return nil
 }
 
-func seedUsers(db *sqlx.DB, size int) (*[]int, error) {
-	repo := repository.NewAuthRepository(db)
-	userIds := make([]int, size)
+func (s *Seeder) SeedUsers(size int) error {
 
-	for index := range make([]int, size) {
+	for range make([]int, size) {
 		newUser := entity2.User{
 			Name:     gofakeit.Name(),
 			Username: gofakeit.Username(),
 			Password: gofakeit.Password(false, false, false, false, false, 8),
 		}
-		b, err := json.MarshalIndent(newUser, "", " ")
-		fmt.Print(string(b))
-		createdUserId, err := repo.CreateUser(newUser)
+		logrus.WithFields(logrus.Fields{
+			"Id":        newUser.Id,
+			"Name":      newUser.Name,
+			"Username":  newUser.Username,
+			"Password":  newUser.Password,
+			"AvatarURL": newUser.AvatarURL,
+			"Phone":     newUser.Phone,
+			"Role":      newUser.Role,
+			"IsActive":  newUser.IsActive,
+			"CreatedAt": newUser.CreatedAt,
+			"UpdatedAt": newUser.UpdatedAt,
+		}).Info("Created user content")
 
+		_, err := s.authRepo.CreateUser(newUser)
 		if err != nil {
-			return nil, err
+			fmt.Printf("Error in seedUsers %s", err.Error())
 		}
-
-		userIds[index] = createdUserId
 	}
-
-	return &userIds, nil
+	return nil
 }

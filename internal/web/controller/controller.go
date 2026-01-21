@@ -45,7 +45,7 @@ func (w *WebController) signInPage(c *gin.Context) {
 	w._webService.SignInPage(c)
 }
 func (w *WebController) signInHelper(c *gin.Context) {
-	w._webService.Login(c)
+	w._webService.HandleSignIn(c)
 }
 
 func (w *WebController) listPage(c *gin.Context) {

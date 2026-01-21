@@ -5,5 +5,6 @@ type Todo struct {
 	Title       string `json:"title"`
 	Description string `json:"description"`
 	Done        bool   `json:"done"`
-	ListId      int    `json:"list_id" binding:"required"`
+
+	ListId int `json:"list_id" binding:"required"`
 }

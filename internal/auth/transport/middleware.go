@@ -43,6 +43,43 @@ func (h *AuthMiddleware) UserIdentity(c *gin.Context) {
 	c.Set(userCtx, userId)
 }
 
+func (h *AuthMiddleware) isAuthenticated(c *gin.Context) bool {
+	token, err := c.Cookie("Bearer")
+	if err != nil {
+		logrus.Errorf("Failed to extract cookie in userIdentity %s", err.Error())
+	}
+	if token == "" {
+		webtool.NewErrorResponse(c, http.StatusUnauthorized, "empty auth token")
+		return false
+	}
+
+	userId, err := h.authService.ParseToken(token)
+	if err != nil {
+		webtool.NewErrorResponse(c, http.StatusUnauthorized, err.Error())
+		return false
+	}
+
+	c.Set(userCtx, userId)
+
+	return true
+}
+
+func (h *AuthMiddleware) WebGuard(c *gin.Context) {
+	isAuth := h.isAuthenticated(c)
+
+	if !isAuth {
+		c.Redirect(http.StatusFound, "/sign-in")
+		return
+	}
+}
+func (h *AuthMiddleware) ApiGuard(c *gin.Context) {
+	isAuth := h.isAuthenticated(c)
+
+	if !isAuth {
+		return
+	}
+}
+
 func (h *AuthMiddleware) GetUserId(c *gin.Context) (int, error) {
 	id, ok := c.Get(userCtx)
 	if !ok {

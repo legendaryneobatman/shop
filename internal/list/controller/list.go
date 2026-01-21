@@ -44,7 +44,7 @@ func (listController *ListController) InitRoutes(api *gin.RouterGroup) {
 }
 
 func (listController *ListController) CreateList(c *gin.Context) {
-	userId, err := listController.authMiddleware.GetUserId(c) // Не смотреть сильно
+	userId, err := listController.authMiddleware.GetUserId(c)
 	if err != nil {
 		return
 	}

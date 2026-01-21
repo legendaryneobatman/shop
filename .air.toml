@@ -11,3 +11,8 @@ poll = true
 
 [log]
   time = true
+
+[proxy]
+  enabled = true
+  proxy_port = 3000    # Порт для браузера
+  app_port = 8000

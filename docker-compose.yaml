@@ -2,13 +2,13 @@ services:
   app:
     build:
       dockerfile: Dockerfile
-      context: ./
+      context: .
     ports:
       - "8000:8000"
+      - "3000:3000"  # Для прокси Air (браузер)
     environment:
       SHARED_DB_URL: postgres://${SHARED_DB_USER}:${SHARED_DB_PASSWORD}@db:${SHARED_DB_PORT}/${SHARED_DB}?sslmode=disable
       DB_PASSWORD: ${SHARED_DB_PASSWORD}
-    working_dir: /app
     volumes:
       - ./:/app
     depends_on:
