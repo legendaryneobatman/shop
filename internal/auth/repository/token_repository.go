@@ -66,7 +66,7 @@ func (r *TokenRepository) GetRefreshTokenByHash(hash string) (*entity.RefreshTok
 
 	return refreshToken, nil
 }
-func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]*entity.RefreshToken, error) {
+func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]entity.RefreshToken, error) {
 	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id=$1", schema.TableNames.RefreshToken)
 	rows, err := r.db.Queryx(query, userID)
 
@@ -75,7 +75,7 @@ func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]*entity.Refres
 		return nil, err
 	}
 
-	var refreshTokens []*entity.RefreshToken
+	var refreshTokens []entity.RefreshToken
 	for rows.Next() {
 		var rf entity.RefreshToken
 
@@ -84,7 +84,7 @@ func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]*entity.Refres
 			return nil, err
 		}
 
-		refreshTokens = append(refreshTokens, &rf)
+		refreshTokens = append(refreshTokens, rf)
 	}
 
 	return refreshTokens, nil

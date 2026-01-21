@@ -27,16 +27,16 @@ func (r *AuthRepository) CreateUser(user *entity.User) (int, error) {
 }
 
 func (r *AuthRepository) GetUser(username, password string) (*entity.User, error) {
-	var user *entity.User
+	var user entity.User
 
 	query := fmt.Sprintf("SELECT id FROM %s WHERE username=$1 AND password_hash=$2", schema.TableNames.User)
 	err := r.db.Get(&user, query, username, password)
 
-	return user, err
+	return &user, err
 }
 
 func (r *AuthRepository) GetUserById(userId int) (*entity.User, error) {
-	var user *entity.User
+	var user entity.User
 	query := fmt.Sprintf("SELECT * FROM %s WHERE id=$1", schema.TableNames.User)
 	err := r.db.Get(&user, query, userId)
 	if err != nil {
@@ -48,23 +48,19 @@ func (r *AuthRepository) GetUserById(userId int) (*entity.User, error) {
 		return nil, err
 	}
 
-	return user, nil
+	return &user, nil
 }
 
 func (r *AuthRepository) GetUserByUsername(username string) (*entity.User, error) {
-	var user *entity.User
+	var user entity.User
 	query := fmt.Sprintf("SELECT * FROM %s WHERE username=$1", schema.TableNames.User)
 	err := r.db.Get(&user, query, username)
-	if err != nil {
-
-	}
-
 	if err != nil {
 		logrus.Errorf("Error when GetUserByUsername %s", err.Error())
 		return nil, err
 	}
 
-	return user, nil
+	return &user, nil
 }
 
 func (r *AuthRepository) GetAll() (*[]entity.User, error) {

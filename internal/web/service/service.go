@@ -89,12 +89,14 @@ func (h *WebService) HandleSignIn(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
-	token, err := h.authService.Authenticate(username, password)
+	tokenPair, err := h.authService.Authenticate(username, password)
 	if err != nil {
 		logrus.Errorf("Error when verifying user %s", err.Error())
 		c.HTML(http.StatusOK, "content", gin.H{"Error": "Неверный логин или пароль"})
 		return
 	}
+
+	token := tokenPair.RefreshToken
 
 	c.SetCookie("Bearer", token, 3600*24, "/", "", false, true)
 

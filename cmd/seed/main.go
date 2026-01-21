@@ -74,7 +74,6 @@ func (s *Seeder) SeedLists(countPerUser int) error {
 		return DefaultCount
 	})()
 
-	fmt.Println(len(users))
 	for _, userEl := range users {
 		newList := entity.List{
 			UserId:      userEl.Id,

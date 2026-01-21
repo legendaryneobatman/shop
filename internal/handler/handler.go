@@ -26,11 +26,13 @@ func NewHandler(db *sqlx.DB) *Handler {
 }
 
 func (h *Handler) Init(router *gin.Engine) {
+	tokenRepo := authRepository.NewTokenRepository(h.db)
+
 	//auth
 	authRepo := authRepository.NewAuthRepository(h.db)
-	authServ := authService.NewAuthService(authRepo)
+	authServ := authService.NewAuthService(authRepo, tokenRepo)
 	authMiddleware := transport.NewAuthMiddleware(authServ)
-	authCtrl := authController.NewAuthController(authServ)
+	authCtrl := authController.NewAuthController(authServ, tokenRepo, authMiddleware)
 
 	h.authMiddleware = authMiddleware
 	h.authService = authServ
