@@ -52,7 +52,8 @@ func (h *Handler) Init(router *gin.Engine) {
 
 	//статика
 	webServ := webService.NewWebservice(authServ, authMiddleware, listServ)
-	webCtrl := webController.NewWebController(webServ, authMiddleware, listServ, authServ)
+	signInServ := webService.NewSignInService(authServ)
+	webCtrl := webController.NewWebController(webServ, signInServ)
 
 	authCtrl.InitRoutes(apiGroup)
 	listCtrl.InitRoutes(apiPGroup)

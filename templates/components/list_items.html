@@ -13,7 +13,7 @@
     {{ if .HasMore }}
     <div id="load-more-container" class="flex justify-center mt-6">
         <button class="px-6 py-2 bg-blue-600 text-white font-medium rounded-full hover:bg-blue-700 transition-colors shadow-lg active:transform active:scale-95"
-                hx-get="/list?offset={{ .NextOffset }}&limit=10"
+                hx-get="/load-list?offset={{ .NextOffset }}&limit=10"
                 hx-target="#load-more-container"
                 hx-swap="outerHTML"
                 hx-indicator="#spinner">

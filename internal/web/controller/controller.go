@@ -2,55 +2,30 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	authService "go-shop/internal/auth/service"
-	"go-shop/internal/auth/transport"
-	listService "go-shop/internal/list/service"
 	"go-shop/internal/web/service"
 )
 
 type WebController struct {
-	_webService *service.WebService
-
-	authMiddleware *transport.AuthMiddleware
-	listService    *listService.ListService
-	authService    *authService.AuthService
+	_webService   *service.WebService
+	signInService *service.SignInService
 }
 
 func NewWebController(
-	_webService *service.WebService,
-
-	authMiddleware *transport.AuthMiddleware,
-	listService *listService.ListService,
-	authService *authService.AuthService,
+	webService *service.WebService,
+	signInService *service.SignInService,
 ) *WebController {
 	return &WebController{
-		_webService: _webService,
-
-		authMiddleware: authMiddleware,
-		listService:    listService,
-		authService:    authService,
+		_webService:   webService,
+		signInService: signInService,
 	}
 }
 
 func (w *WebController) InitRoutes(pg *gin.RouterGroup, upg *gin.RouterGroup) {
 	// тут разные должны быть группы, для ауфа непротектед, для листов протектед
-	upg.GET("/sign-in", w.signInPage)
-	upg.POST("/login", w.signInHelper)
+	upg.GET("/sign-in", w.signInService.RenderSignInPage)
+	upg.POST("/login", w.signInService.HandleSignIn)
+	upg.POST("/sign-in-retry", w.signInService.RetrySignIn)
 
-	pg.GET("/", w.listPage)
-	pg.GET("/list", w.listPageHelper)
-}
-
-func (w *WebController) signInPage(c *gin.Context) {
-	w._webService.SignInPage(c)
-}
-func (w *WebController) signInHelper(c *gin.Context) {
-	w._webService.HandleSignIn(c)
-}
-
-func (w *WebController) listPage(c *gin.Context) {
-	w._webService.IndexPage(c)
-}
-func (w WebController) listPageHelper(c *gin.Context) {
-	w._webService.LoadMoreList(c)
+	pg.GET("/", w._webService.RenderListsPage)
+	pg.GET("/load-list", w._webService.LoadMoreList)
 }

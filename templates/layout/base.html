@@ -10,6 +10,14 @@
                     crossorigin="anonymous"
             ></script>
             <title>{{ .PageTitle }}</title>
+            <script>
+                document.body.addEventListener('htmx:configRequest', function(evt) {
+                    const token = localStorage.getItem('accessToken');
+                    if (token) {
+                        evt.detail.headers['Authorization'] = 'Bearer ' + token;
+                    }
+                });
+            </script>
         </head>
         <body>
             {{ template "header" . }}

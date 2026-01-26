@@ -120,7 +120,7 @@ func (s *Seeder) SeedUsers(size int) error {
 			"UpdatedAt": newUser.UpdatedAt,
 		}).Info("Created user content")
 
-		_, err := s.authRepo.CreateUser(newUser)
+		_, err := s.authRepo.CreateUser(&newUser)
 		if err != nil {
 			fmt.Printf("Error in seedUsers %s", err.Error())
 		}

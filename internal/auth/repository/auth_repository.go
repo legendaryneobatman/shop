@@ -63,7 +63,7 @@ func (r *AuthRepository) GetUserByUsername(username string) (*entity.User, error
 	return &user, nil
 }
 
-func (r *AuthRepository) GetAll() (*[]entity.User, error) {
+func (r *AuthRepository) GetAll() ([]entity.User, error) {
 	var users []entity.User
 	query := fmt.Sprintf("SELECT * FROM %s", schema.TableNames.List)
 	rows, err := r.db.Query(query)
@@ -81,5 +81,5 @@ func (r *AuthRepository) GetAll() (*[]entity.User, error) {
 	if err := rows.Err(); err != nil {
 		return nil, err
 	}
-	return &users, nil
+	return users, nil
 }

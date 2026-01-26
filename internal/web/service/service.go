@@ -29,7 +29,7 @@ func NewWebservice(
 	}
 }
 
-func (h *WebService) IndexPage(c *gin.Context) {
+func (h *WebService) RenderListsPage(c *gin.Context) {
 
 	data, err := h.getDataForList(c)
 
@@ -78,29 +78,6 @@ func (h *WebService) getDataForList(c *gin.Context) (gin.H, error) {
 	data["HasMore"] = len(lists) == Limit
 
 	return data, nil
-}
-
-func (h *WebService) SignInPage(c *gin.Context) {
-	data := gin.H{}
-	c.HTML(http.StatusOK, "sign-in", data)
-}
-
-func (h *WebService) HandleSignIn(c *gin.Context) {
-	username := c.PostForm("username")
-	password := c.PostForm("password")
-
-	tokenPair, err := h.authService.Authenticate(username, password)
-	if err != nil {
-		logrus.Errorf("Error when verifying user %s", err.Error())
-		c.HTML(http.StatusOK, "content", gin.H{"Error": "Неверный логин или пароль"})
-		return
-	}
-
-	token := tokenPair.RefreshToken
-
-	c.SetCookie("Bearer", token, 3600*24, "/", "", false, true)
-
-	c.Header("HX-Redirect", "/")
 }
 
 func (h *WebService) LoadMoreList(c *gin.Context) {

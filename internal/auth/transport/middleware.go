@@ -3,10 +3,10 @@ package transport
 import (
 	"errors"
 	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
 	"go-shop/internal/auth/service"
 	"go-shop/pkg/webtool"
 	"net/http"
+	"strings"
 )
 
 const (
@@ -22,40 +22,23 @@ func NewAuthMiddleware(authService *service.AuthService) *AuthMiddleware {
 	return &AuthMiddleware{authService: authService}
 }
 
-func (h *AuthMiddleware) UserIdentity(c *gin.Context) {
-	token, err := c.Cookie("Bearer")
-	if err != nil {
-		logrus.Errorf("Failed to extract cookie in userIdentity %s", err.Error())
-	}
-	if token == "" {
-		c.Redirect(http.StatusFound, "/sign-in")
-		webtool.NewErrorResponse(c, http.StatusUnauthorized, "empty auth token")
-		return
-	}
-
-	userId, err := h.authService.ParseToken(token)
-	if err != nil {
-		c.Redirect(http.StatusFound, "/sign-in")
-		webtool.NewErrorResponse(c, http.StatusUnauthorized, err.Error())
-		return
-	}
-
-	c.Set(userCtx, userId)
-}
-
 func (h *AuthMiddleware) isAuthenticated(c *gin.Context) bool {
-	token, err := c.Cookie("Bearer")
-	if err != nil {
-		logrus.Errorf("Failed to extract cookie in userIdentity %s", err.Error())
-	}
+	token := c.GetHeader(authorizationHeader)
 	if token == "" {
 		webtool.NewErrorResponse(c, http.StatusUnauthorized, "empty auth token")
 		return false
 	}
 
-	userId, err := h.authService.ParseToken(token)
+	parts := strings.Split(authorizationHeader, " ")
+	if len(parts) != 2 || parts[0] != "Bearer" {
+		webtool.NewErrorResponse(c, http.StatusUnauthorized, "Invalid authorization header format")
+		return false
+	}
+
+	accessToken := parts[1]
+	userId, err := h.authService.ParseToken(accessToken)
 	if err != nil {
-		webtool.NewErrorResponse(c, http.StatusUnauthorized, err.Error())
+		webtool.NewErrorResponse(c, http.StatusUnauthorized, "Invalid or expired access token")
 		return false
 	}
 
@@ -68,7 +51,8 @@ func (h *AuthMiddleware) WebGuard(c *gin.Context) {
 	isAuth := h.isAuthenticated(c)
 
 	if !isAuth {
-		c.Redirect(http.StatusFound, "/sign-in")
+		println("ZALUPA")
+		c.Header("HX-Location", "/sign-in")
 		return
 	}
 }
