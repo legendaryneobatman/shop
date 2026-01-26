@@ -1,36 +1,10 @@
-{{ define "main" }}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script
-            src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
-            integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
-            crossorigin="anonymous"
-    ></script>
-    <title>Title</title>
-</head>
-<body id="top" class="min-h-screen h-auto grid grid-rows-[auto, max-content, auto] content-between">
-{{ template "header" . }}
-
-<div class="flex items-center justify-center">
-    <div class="max-w-2xl mx-auto py-10 px-4">
-        <h1 class="text-3xl font-extrabold text-gray-900 mb-8">Мои задачи</h1>
-        <div id="list-container">
-            {{ template "list-elements" . }}
+{{ define "content" }}
+    <div class="flex items-center justify-center">
+        <div class="max-w-2xl mx-auto py-10 px-4">
+            <h1 class="text-3xl font-extrabold text-gray-900 mb-8">Мои задачи</h1>
+            <div id="list-container">
+                {{ template "list-elements" . }}
+            </div>
         </div>
     </div>
-</div>
-
-{{ template "go-up-button" . }}
-{{ template "footer" . }}
-</body>
-
-<style>
-    :root {
-        font-size: 16px;
-    }
-</style>
-</html>
-{{end}}
+{{ end }}
