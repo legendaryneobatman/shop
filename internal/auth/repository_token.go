@@ -1,4 +1,4 @@
-package repository
+package auth
 
 import (
 	"fmt"
@@ -16,22 +16,22 @@ type ITokenRepository interface {
 	RevokeAllUserTokens(userID int) error
 }
 
-type TokenRepository struct {
+type RepositoryToken struct {
 	db *sqlx.DB
 }
 
-func NewTokenRepository(_db *sqlx.DB) *TokenRepository {
-	return &TokenRepository{db: _db}
+func NewRepositoryToken(_db *sqlx.DB) *RepositoryToken {
+	return &RepositoryToken{db: _db}
 }
 
-func (r *TokenRepository) SaveRefreshToken(token entity.RefreshToken) error {
-	query := fmt.Sprintf("INSERT INTO %s (user_id,expires_at,ip_address,user_agent,revoked) values ($1, $2,$3, $4, $5)", schema.TableNames.RefreshToken)
+func (r *RepositoryToken) SaveRefreshToken(token entity.RefreshToken) error {
+	query := fmt.Sprintf("INSERT INTO %s (user_id,expires_at,ip_address,user_agent,revoked) values ($1, $2,$3, $4, $5)", schema.RefreshTokenTable)
 	row := r.db.QueryRow(
 		query,
-		token.UserId,
+		token.UserID,
 		token.TokenHash,
 		token.ExpiresAt,
-		token.IpAddress,
+		token.IPAddress,
 		token.UserAgent,
 		token.Revoked,
 	)
@@ -44,21 +44,14 @@ func (r *TokenRepository) SaveRefreshToken(token entity.RefreshToken) error {
 	}
 	return nil
 }
-func (r *TokenRepository) GetRefreshTokenByHash(hash string) (*entity.RefreshToken, error) {
+func (r *RepositoryToken) GetRefreshTokenByHash(hash string) (*entity.RefreshToken, error) {
 	refreshToken := &entity.RefreshToken{}
 
-	query := fmt.Sprintf("SELECT * FROM %s WHERE token_hash=$1", schema.TableNames.RefreshToken)
-	row := r.db.QueryRow(query, hash)
-	err := row.Scan(
-		&refreshToken.Id,
-		&refreshToken.UserId,
-		&refreshToken.TokenHash,
-		&refreshToken.ExpiresAt,
-		&refreshToken.IpAddress,
-		&refreshToken.UserAgent,
-		&refreshToken.Revoked,
+	query := fmt.Sprintf(
+		"SELECT id, user_id, token_hash, expires_at, ip_address, user_agent, revoked FROM %s WHERE token_hash=$1",
+		schema.RefreshTokenTable,
 	)
-
+	err := r.db.Get(refreshToken, query, hash)
 	if err != nil {
 		logrus.Errorf("Error when GetRefreshTokenByHash %s", err.Error())
 		return nil, err
@@ -66,10 +59,17 @@ func (r *TokenRepository) GetRefreshTokenByHash(hash string) (*entity.RefreshTok
 
 	return refreshToken, nil
 }
-func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]entity.RefreshToken, error) {
-	query := fmt.Sprintf("SELECT * FROM %s WHERE user_id=$1", schema.TableNames.RefreshToken)
+func (r *RepositoryToken) GetRefreshTokensByUserID(userID int) ([]entity.RefreshToken, error) {
+	query := fmt.Sprintf(
+		"SELECT id, user_id, token_hash, expires_at, ip_address, user_agent, revoked FROM %s WHERE user_id=$1",
+		schema.RefreshTokenTable,
+	)
 	rows, err := r.db.Queryx(query, userID)
-
+	defer rows.Close()
+	if rows.Err() != nil {
+		logrus.Errorf("Error when rows for GetRefreshTokensByUserID %s", rows.Err().Error())
+		return nil, rows.Err()
+	}
 	if err != nil {
 		logrus.Errorf("Error when executing query for GetRefreshTokensByUserID %s", err.Error())
 		return nil, err
@@ -89,8 +89,8 @@ func (r *TokenRepository) GetRefreshTokensByUserID(userID int) ([]entity.Refresh
 
 	return refreshTokens, nil
 }
-func (r *TokenRepository) RevokeRefreshToken(tokenID int) error {
-	query := fmt.Sprintf("UPDATE %s SET revoked=true WHERE $1", schema.TableNames.RefreshToken)
+func (r *RepositoryToken) RevokeRefreshToken(tokenID int) error {
+	query := fmt.Sprintf("UPDATE %s SET revoked=true WHERE $1", schema.RefreshTokenTable)
 	row := r.db.QueryRow(query, tokenID)
 	err := row.Scan()
 	if err != nil {
@@ -100,8 +100,8 @@ func (r *TokenRepository) RevokeRefreshToken(tokenID int) error {
 
 	return nil
 }
-func (r *TokenRepository) RevokeAllUserTokens(userID int) error {
-	query := fmt.Sprintf("UPDATE %s SET revoked=true WHERE user_id=$1", schema.TableNames.RefreshToken)
+func (r *RepositoryToken) RevokeAllUserTokens(userID int) error {
+	query := fmt.Sprintf("UPDATE %s SET revoked=true WHERE user_id=$1", schema.RefreshTokenTable)
 	row := r.db.QueryRow(query, userID)
 	err := row.Scan()
 

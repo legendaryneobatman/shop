@@ -1,22 +1,7 @@
 {{ define "sign-in" }}
-<!DOCTYPE html>
-<html lang="en">
-<head>
-    <meta charset="UTF-8">
-    <script src="https://cdn.jsdelivr.net/npm/@tailwindcss/browser@4"></script>
-    <script
-            src="https://cdn.jsdelivr.net/npm/htmx.org@2.0.8/dist/htmx.min.js"
-            integrity="sha384-/TgkGk7p307TH7EXJDuUlgG3Ce1UVolAOFopFekQkkXihi5u/6OCvVKyz1W+idaz"
-            crossorigin="anonymous"
-    ></script>
-    <title>Title</title>
-</head>
-<body id="top" class="min-h-screen h-auto grid grid-rows-[auto, max-content, auto] content-between">
-{{ template "header" . }}
-<div class="container mx-auto p-4 flex items-center justify-center">
-    {{ template "sign-in-form" .}}
-</div>
-{{ template "footer" . }}
-</body>
-</html>
+    {{ template "base" . }}
 {{end}}
+
+{{ define "content" }}
+    {{ template "sign-in-form" .}}
+{{ end }}

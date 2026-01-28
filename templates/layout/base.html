@@ -11,20 +11,21 @@
             ></script>
             <title>{{ .PageTitle }}</title>
             <script>
-                document.body.addEventListener('htmx:configRequest', function(evt) {
-                    const token = localStorage.getItem('accessToken');
-                    if (token) {
-                        evt.detail.headers['Authorization'] = 'Bearer ' + token;
+                document.addEventListener("htmx:configRequest", function (evt) {
+                    console.log("htmx:configRequest", evt.detail);
+                    const authToken = localStorage.getItem("access_token");
+                    if (authToken) {
+                        evt.detail.headers["Authorization"] = "Bearer " + authToken;
                     }
                 });
             </script>
         </head>
-        <body>
+        <body class="h-screen flex flex-col">
             {{ template "header" . }}
 
-            <main>
+            <main class="flex flex-column flex-grow justify-center items-center">
                 {{ block "content" . }}
-                    <p>Здесь должно быть содержимое страницы...</p>
+                <p>Здесь должно быть содержимое страницы...</p>
                 {{ end }}
             </main>
 

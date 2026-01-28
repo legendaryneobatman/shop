@@ -1,62 +1,76 @@
-package service
+package auth
 
 import (
 	"crypto/sha256"
+	"database/sql"
 	"encoding/hex"
 	"errors"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
-	"go-shop/internal/auth/repository"
+	"go-shop/internal/user"
 	"go-shop/internal/user/entity"
 	"golang.org/x/crypto/bcrypt"
 	"os"
+	"strconv"
 	"time"
 )
 
 const (
-	salt         = "aslkdjaslk"
-	signingUpKey = "aksldjhaksjhdakjshd"
+	accessTokenTTL  = 15 * time.Minute
+	refreshTokenTTL = 7 * 24 * time.Hour
 )
 
 type TokenPair struct {
-	AccessToken  string
-	RefreshToken string
+	AccessToken  string `json:"access_token"`
+	RefreshToken string `json:"refresh_token"`
 }
 type tokenClaims struct {
 	jwt.StandardClaims
-	UserId int `json:"user_id"`
+	UserID int `json:"user_id"`
 }
 
-type AuthService struct {
-	accessTokenTTL  time.Duration
-	refreshTokenTTL time.Duration
+type Service struct {
+	AccessTokenTTL  time.Duration
+	RefreshTokenTTL time.Duration
 	jwtSecretKey    []byte
-	ra              *repository.AuthRepository
-	rt              *repository.TokenRepository
+	rAuth           *RepositoryAuth
+	rToken          *RepositoryToken
+	errors          *Errors
 }
 
-func NewAuthService(ra *repository.AuthRepository, rt *repository.TokenRepository) *AuthService {
+func NewAuthService(ra *RepositoryAuth, rt *RepositoryToken, errors *Errors) *Service {
 	secret := os.Getenv("JWT_SECRET_KEY")
 	if secret == "" {
 		logrus.Fatalf("JWT_SECRET_KEY is not set in enviroment")
 	}
-	return &AuthService{
-		accessTokenTTL:  15 * time.Minute,
-		refreshTokenTTL: 7 * 24 * time.Hour,
-		ra:              ra,
-		rt:              rt,
+	return &Service{
+		AccessTokenTTL:  accessTokenTTL,
+		RefreshTokenTTL: refreshTokenTTL,
+		rAuth:           ra,
+		errors:          errors,
+		rToken:          rt,
 		jwtSecretKey:    []byte(secret),
 	}
 }
 
-func (s *AuthService) CreateUser(user *entity.User) (int, error) {
-	user.Password = string(s.generatePasswordHash(user.Password))
-	return s.ra.CreateUser(user)
+func (s *Service) CreateUser(input *SignUpInput) (user.User, error) {
+	input.Password = string(s.generatePasswordHash(input.Password))
+	user := user.User{
+		Name:     input.Name,
+		Username: input.Username,
+		Password: input.Password,
+	}
+	id, err := s.rAuth.CreateUser(&user)
+	if err != nil {
+		logrus.Errorf("Error when CreateUser %s", err.Error())
+		return user, err
+	}
+	user.ID = id
+	return user, nil
 }
-func (s *AuthService) Authenticate(username, password string) (*TokenPair, error) {
-	user, err := s.ra.GetUserByUsername(username)
+func (s *Service) Authenticate(username, password string) (*TokenPair, error) {
+	user, err := s.rAuth.GetUserByUsername(username)
 	if err != nil {
 		logrus.Errorf("Error when trying to get user for verify %s", err.Error())
 		return nil, err
@@ -67,7 +81,7 @@ func (s *AuthService) Authenticate(username, password string) (*TokenPair, error
 		return nil, err
 	}
 
-	accessToken, err := s.generateAccessToken(user.Id)
+	accessToken, err := s.generateAccessToken(user.ID)
 	if err != nil {
 		logrus.Errorf("Error when try to generate access token in Authenticate %s", err.Error())
 		return nil, err
@@ -84,64 +98,73 @@ func (s *AuthService) Authenticate(username, password string) (*TokenPair, error
 		RefreshToken: refreshToken,
 	}, nil
 }
-func (s *AuthService) ParseToken(accessToken string) (int, error) {
-	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+func (s *Service) ParseTokenForUserID(accessToken string) (int, error) {
+	token, err := jwt.ParseWithClaims(accessToken, &tokenClaims{}, func(token *jwt.Token) (any, error) {
 		if _, ok := token.Method.(*jwt.SigningMethodHMAC); !ok {
 			return nil, errors.New("invalid signing method")
 		}
-
-		return []byte(signingUpKey), nil
+		return s.jwtSecretKey, nil
 	})
 
 	if err != nil {
+		logrus.Errorf("Error when try to parse token %s", err.Error())
 		return 0, err
 	}
+
+	if !token.Valid {
+		logrus.Errorf("Token is not valid")
+		return 0, err
+	}
+
 	claims, ok := token.Claims.(*tokenClaims)
 	if !ok {
+		logrus.Errorf("Token claims are not of type *tokenClaims")
 		return 0, errors.New("token claims are not of type *tokenClaims")
 	}
 
-	return claims.UserId, nil
+	return claims.UserID, nil
 }
-func (s *AuthService) RefreshTokens(refreshToken string) (*TokenPair, error) {
+func (s *Service) RefreshTokens(refreshToken string) (*TokenPair, error) {
 	hash := sha256.Sum256([]byte(refreshToken))
-	tokenHash := hex.EncodeToString(hash[:])
+	tHash := hex.EncodeToString(hash[:])
 
-	storedToken, err := s.rt.GetRefreshTokenByHash(tokenHash)
+	storedRefreshT, err := s.rToken.GetRefreshTokenByHash(tHash)
+	if err != nil && errors.Is(err, sql.ErrNoRows) {
+		return nil, s.errors.NoTokenFound.Error
+	}
 	if err != nil {
-		logrus.Errorf("Error when searching for stored token by hash %s", err.Error())
 		return nil, err
 	}
 
-	storedTokenExpiresAtTime, err := time.Parse("YYYY-MM-DD HH:MM:SS", storedToken.ExpiresAt)
+	storedTExpiresAtTime, err := time.Parse("YYYY-MM-DD HH:MM:SS", storedRefreshT.ExpiresAt)
 	if err != nil {
-		logrus.Errorf("Error when parsing time from storedToken %s", err.Error())
+		logrus.Errorf("stored refresh token is expired %s", err.Error())
 		return nil, err
 	}
 
-	if time.Now().After(storedTokenExpiresAtTime) {
-		logrus.Errorf("Stored token is expired")
+	if time.Now().After(storedTExpiresAtTime) {
+		logrus.Errorf("stored refresh token is expired")
 		return nil, err
 	}
 
-	if storedToken.Revoked != nil && *storedToken.Revoked {
+	if storedRefreshT.Revoked != nil && *storedRefreshT.Revoked {
 		logrus.Errorf("Stored token is revoked")
 		return nil, err
 	}
 
-	user, err := s.ra.GetUserById(storedToken.UserId)
+	user, err := s.rAuth.GetUserByID(storedRefreshT.UserID)
 	if err != nil {
 		logrus.Errorf("Error when geting user by id %s", err.Error())
 		return nil, err
 	}
 
-	newAccessToken, err := s.generateAccessToken(user.Id)
+	newAccessToken, err := s.generateAccessToken(user.ID)
 	if err != nil {
 		logrus.Errorf("Failed to generate access token %s", err.Error())
 		return nil, err
 	}
 
-	if err := s.rt.RevokeRefreshToken(storedToken.Id); err != nil {
+	if err := s.rToken.RevokeRefreshToken(storedRefreshT.ID); err != nil {
 		logrus.Errorf("Failed to revoke refresh token %s", err.Error())
 		return nil, err
 	}
@@ -153,15 +176,14 @@ func (s *AuthService) RefreshTokens(refreshToken string) (*TokenPair, error) {
 	}
 
 	newTokenEntity := entity.RefreshToken{
-		UserId:    user.Id,
+		UserID:    user.ID,
 		TokenHash: newRefreshTokenHash,
-		ExpiresAt: time.Now().Add(s.refreshTokenTTL).String(),
+		ExpiresAt: time.Now().Add(s.RefreshTokenTTL).String(),
 		Revoked:   nil,
 	}
-
-	if err := s.rt.SaveRefreshToken(newTokenEntity); err != nil {
+	if err := s.rToken.SaveRefreshToken(newTokenEntity); err != nil {
 		logrus.Errorf("Error when saving refresh token %s", err.Error())
-		return nil, nil
+		return nil, err
 	}
 
 	return &TokenPair{
@@ -169,25 +191,25 @@ func (s *AuthService) RefreshTokens(refreshToken string) (*TokenPair, error) {
 		RefreshToken: newRefreshToken,
 	}, nil
 }
-func (s *AuthService) RevokeToken(refreshToken string) error {
+func (s *Service) RevokeToken(refreshToken string) error {
 	hash := sha256.Sum256([]byte(refreshToken))
 	tokenHash := hex.EncodeToString(hash[:])
 
-	storedToken, err := s.rt.GetRefreshTokenByHash(tokenHash)
+	storedToken, err := s.rToken.GetRefreshTokenByHash(tokenHash)
 	if err != nil {
 		logrus.Errorf("Error when searching for stored token by hash %s", err.Error())
 		return err
 	}
 
-	if err := s.rt.RevokeRefreshToken(storedToken.Id); err != nil {
+	if err := s.rToken.RevokeRefreshToken(storedToken.ID); err != nil {
 		logrus.Errorf("Error when revoking token %s", err.Error())
 		return err
 	}
 
 	return nil
 }
-func (s *AuthService) RevokeAllTokens(userId int) error {
-	if err := s.rt.RevokeAllUserTokens(userId); err != nil {
+func (s *Service) RevokeAllTokens(userID int) error {
+	if err := s.rToken.RevokeAllUserTokens(userID); err != nil {
 		logrus.Errorf("Error when revoking all tokens %s", err.Error())
 		return err
 	}
@@ -195,7 +217,7 @@ func (s *AuthService) RevokeAllTokens(userId int) error {
 	return nil
 }
 
-func (s *AuthService) generatePasswordHash(password string) []byte {
+func (s *Service) generatePasswordHash(password string) []byte {
 	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
 	if err != nil {
 		logrus.Errorf("Failed to encrypt password error: %s", err.Error())
@@ -203,7 +225,7 @@ func (s *AuthService) generatePasswordHash(password string) []byte {
 
 	return hash
 }
-func (s *AuthService) generateRefreshToken() (token string, tokenHash string, err error) {
+func (s *Service) generateRefreshToken() (token string, tokenHash string, err error) {
 	token = uuid.New().String()
 
 	hash := sha256.Sum256([]byte(token))
@@ -211,14 +233,14 @@ func (s *AuthService) generateRefreshToken() (token string, tokenHash string, er
 
 	return token, tokenHash, nil
 }
-func (s *AuthService) generateAccessToken(userId int) (string, error) {
+func (s *Service) generateAccessToken(userID int) (string, error) {
 	claims := &tokenClaims{
 		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(s.accessTokenTTL).Unix(),
+			ExpiresAt: time.Now().Add(s.AccessTokenTTL).Unix(),
 			IssuedAt:  time.Now().Unix(),
-			Subject:   fmt.Sprintf("%d", userId),
+			Subject:   strconv.Itoa(userID),
 		},
-		UserId: userId,
+		UserID: userID,
 	}
 
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, claims)

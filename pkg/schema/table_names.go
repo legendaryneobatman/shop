@@ -1,13 +1,8 @@
 package schema
 
-var TableNames = struct {
-	User         string
-	List         string
-	Todo         string
-	RefreshToken string
-}{
-	User:         "users",
-	List:         "lists",
-	Todo:         "todos",
-	RefreshToken: "refresh_tokens",
-}
+const (
+	UserTable         = "users"
+	ListTable         = "lists"
+	TodoTable         = "todos"
+	RefreshTokenTable = "refresh_tokens"
+)

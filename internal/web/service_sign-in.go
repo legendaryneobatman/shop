@@ -1,30 +1,34 @@
-package service
+package web
 
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
-	authService "go-shop/internal/auth/service"
+	"go-shop/internal/auth"
 	"net/http"
 )
 
-type SignInService struct {
-	authService *authService.AuthService
+const (
+	cookieMaxAge = 3600 * 24 // 24 hours
+)
+
+type ServiceSignIn struct {
+	authService *auth.Service
 }
 
-func NewSignInService(authService *authService.AuthService) *SignInService {
-	return &SignInService{
+func NewSignInService(authService *auth.Service) *ServiceSignIn {
+	return &ServiceSignIn{
 		authService: authService,
 	}
 }
 
-func (p *SignInService) RenderSignInPage(c *gin.Context) {
+func (p *ServiceSignIn) RenderSignInPage(c *gin.Context) {
 	data := gin.H{}
 	c.HTML(http.StatusOK, "sign-in", data)
 }
-func (p *SignInService) RetrySignIn(c *gin.Context) {
+func (p *ServiceSignIn) RetrySignIn(c *gin.Context) {
 	c.Header("HX-Redirect", "/sign-in")
 }
-func (p *SignInService) HandleSignIn(c *gin.Context) {
+func (p *ServiceSignIn) HandleSignIn(c *gin.Context) {
 	username := c.PostForm("username")
 	password := c.PostForm("password")
 
@@ -35,7 +39,7 @@ func (p *SignInService) HandleSignIn(c *gin.Context) {
 		return
 	}
 
-	c.SetCookie("Bearer", tokenPair.RefreshToken, 3600*24, "/", "", false, true)
+	c.SetCookie("Bearer", tokenPair.RefreshToken, cookieMaxAge, "/", "", false, true)
 
 	c.HTML(http.StatusOK, "auth-redirect", gin.H{
 		"AccessToken": tokenPair.AccessToken,

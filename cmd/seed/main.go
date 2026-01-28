@@ -6,20 +6,21 @@ import (
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"go-shop/internal/auth/repository"
-	"go-shop/internal/list/entity"
-	repo2 "go-shop/internal/list/repository"
-	entity2 "go-shop/internal/user/entity"
+	"go-shop/internal/auth"
+	repo2 "go-shop/internal/list"
+	entity2 "go-shop/internal/user"
 	"log"
 	"os"
 )
 
+const passwordLength = 8
+
 type Seeder struct {
-	listRepo *repo2.ListRepository
-	authRepo *repository.AuthRepository
+	listRepo *repo2.Repository
+	authRepo *auth.RepositoryAuth
 }
 
-func NewSeeder(_listRepo *repo2.ListRepository, _authRepo *repository.AuthRepository) *Seeder {
+func NewSeeder(_listRepo *repo2.Repository, _authRepo *auth.RepositoryAuth) *Seeder {
 	return &Seeder{
 		listRepo: _listRepo,
 		authRepo: _authRepo,
@@ -28,8 +29,8 @@ func NewSeeder(_listRepo *repo2.ListRepository, _authRepo *repository.AuthReposi
 
 func main() {
 	const (
-		UserCount        = 10
-		ListPerUserCount = 100
+		userCount        = 10
+		listPerUserCount = 100
 	)
 
 	db, err := sqlx.Connect("pgx", os.Getenv("SHARED_DB_URL"))
@@ -41,17 +42,17 @@ func main() {
 	}(db)
 	log.Println("Connected to DB for seeding...")
 
-	listRepo := repo2.NewListRepository(db)
-	authRepo := repository.NewAuthRepository(db)
+	listRepo := repo2.NewRepository(db)
+	authRepo := auth.NewRepositoryAuth(db)
 
 	seed := NewSeeder(listRepo, authRepo)
 
-	//err = seed.SeedUsers(UserCount)
-	//if err != nil {
+	// err = seed.SeedUsers(userCount)
+	// if err != nil {
 	//	logrus.Errorf("Error while seeding Users %s", err.Error())
 	//}
 
-	err = seed.SeedLists(ListPerUserCount)
+	err = seed.SeedLists(listPerUserCount)
 	if err != nil {
 		return
 	}
@@ -60,7 +61,7 @@ func main() {
 }
 
 func (s *Seeder) SeedLists(countPerUser int) error {
-	const DefaultCount = 100
+	const defaultCount = 100
 	users, err := s.authRepo.GetAll()
 	if err != nil {
 		logrus.Errorf("Error when try to get users for seedLists: %s", err.Error())
@@ -71,20 +72,20 @@ func (s *Seeder) SeedLists(countPerUser int) error {
 			return countPerUser
 		}
 
-		return DefaultCount
+		return defaultCount
 	})()
 
 	for _, userEl := range users {
-		newList := entity.List{
-			UserId:      userEl.Id,
+		newList := repo2.List{
+			UserID:      userEl.ID,
 			Title:       gofakeit.BookTitle(),
 			Description: gofakeit.ProductDescription(),
 		}
 		for range count {
-			_, err := s.listRepo.Create(userEl.Id, newList)
+			_, err := s.listRepo.Create(userEl.ID, newList)
 
 			logrus.WithFields(logrus.Fields{
-				"UserId":      newList.UserId,
+				"UserID":      newList.UserID,
 				"Title":       newList.Title,
 				"Description": newList.Description,
 			}).Info("Created list content")
@@ -99,16 +100,15 @@ func (s *Seeder) SeedLists(countPerUser int) error {
 	return nil
 }
 
-func (s *Seeder) SeedUsers(size int) error {
-
+func (s *Seeder) SeedUsers(size int) {
 	for range make([]int, size) {
 		newUser := entity2.User{
 			Name:     gofakeit.Name(),
 			Username: gofakeit.Username(),
-			Password: gofakeit.Password(false, false, false, false, false, 8),
+			Password: gofakeit.Password(false, false, false, false, false, passwordLength),
 		}
 		logrus.WithFields(logrus.Fields{
-			"Id":        newUser.Id,
+			"ID":        newUser.ID,
 			"Name":      newUser.Name,
 			"Username":  newUser.Username,
 			"Password":  newUser.Password,
@@ -125,5 +125,4 @@ func (s *Seeder) SeedUsers(size int) error {
 			fmt.Printf("Error in seedUsers %s", err.Error())
 		}
 	}
-	return nil
 }

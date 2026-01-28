@@ -3,22 +3,16 @@ package handler
 import (
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"
-	authController "go-shop/internal/auth/controller"
-	authRepository "go-shop/internal/auth/repository"
-	authService "go-shop/internal/auth/service"
-	"go-shop/internal/auth/transport"
-	listController "go-shop/internal/list/controller"
-	listRepository "go-shop/internal/list/repository"
-	listService "go-shop/internal/list/service"
-	webController "go-shop/internal/web/controller"
-	webService "go-shop/internal/web/service"
+	"go-shop/internal/auth"
+	"go-shop/internal/list"
+	"go-shop/internal/web"
 )
 
 type Handler struct {
 	db             *sqlx.DB
-	listService    *listService.ListService
-	authMiddleware *transport.AuthMiddleware
-	authService    *authService.AuthService
+	listService    *list.Service
+	authMiddleware *auth.Middleware
+	authService    *auth.Service
 }
 
 func NewHandler(db *sqlx.DB) *Handler {
@@ -26,34 +20,35 @@ func NewHandler(db *sqlx.DB) *Handler {
 }
 
 func (h *Handler) Init(router *gin.Engine) {
-	tokenRepo := authRepository.NewTokenRepository(h.db)
+	tokenRepo := auth.NewRepositoryToken(h.db)
 
-	//auth
-	authRepo := authRepository.NewAuthRepository(h.db)
-	authServ := authService.NewAuthService(authRepo, tokenRepo)
-	authMiddleware := transport.NewAuthMiddleware(authServ)
-	authCtrl := authController.NewAuthController(authServ, tokenRepo, authMiddleware)
+	// auth
+	authErrors := auth.NewAuthErrors()
+	authRepo := auth.NewRepositoryAuth(h.db)
+	authServ := auth.NewAuthService(authRepo, tokenRepo, authErrors)
+	authMiddleware := auth.NewAuthMiddleware(authServ)
+	authCtrl := auth.NewAuthController(authServ, tokenRepo, authMiddleware, authErrors)
 
 	h.authMiddleware = authMiddleware
 	h.authService = authServ
 
 	webGroup := router.Group("", h.authMiddleware.WebGuard)
-	apiPGroup := router.Group("/api", h.authMiddleware.ApiGuard)
+	apiPGroup := router.Group("/api", h.authMiddleware.APIGuard)
 	apiGroup := router.Group("/api")
 	authGroup := router.Group("/")
 
-	//list
-	listRepo := listRepository.NewListRepository(h.db)
-	listServ := listService.NewListService(listRepo)
-	listCtrl := listController.NewListController(listServ, authServ, authMiddleware)
+	// list
+	listRepo := list.NewRepository(h.db)
+	listServ := list.NewListService(listRepo)
+	listCtrl := list.NewHandler(listServ, authServ, authMiddleware)
 	h.listService = listServ
 
-	//todo
+	// todo
 
-	//статика
-	webServ := webService.NewWebservice(authServ, authMiddleware, listServ)
-	signInServ := webService.NewSignInService(authServ)
-	webCtrl := webController.NewWebController(webServ, signInServ)
+	// статика
+	webServ := web.NewService(authServ, authMiddleware, listServ)
+	signInServ := web.NewSignInService(authServ)
+	webCtrl := web.NewHandler(webServ, signInServ)
 
 	authCtrl.InitRoutes(apiGroup)
 	listCtrl.InitRoutes(apiPGroup)

@@ -1,26 +1,25 @@
-package controller
+package web
 
 import (
 	"github.com/gin-gonic/gin"
-	"go-shop/internal/web/service"
 )
 
-type WebController struct {
-	_webService   *service.WebService
-	signInService *service.SignInService
+type Handler struct {
+	_webService   *ServiceLists
+	signInService *ServiceSignIn
 }
 
-func NewWebController(
-	webService *service.WebService,
-	signInService *service.SignInService,
-) *WebController {
-	return &WebController{
+func NewHandler(
+	webService *ServiceLists,
+	signInService *ServiceSignIn,
+) *Handler {
+	return &Handler{
 		_webService:   webService,
 		signInService: signInService,
 	}
 }
 
-func (w *WebController) InitRoutes(pg *gin.RouterGroup, upg *gin.RouterGroup) {
+func (w *Handler) InitRoutes(pg *gin.RouterGroup, upg *gin.RouterGroup) {
 	// тут разные должны быть группы, для ауфа непротектед, для листов протектед
 	upg.GET("/sign-in", w.signInService.RenderSignInPage)
 	upg.POST("/login", w.signInService.HandleSignIn)
