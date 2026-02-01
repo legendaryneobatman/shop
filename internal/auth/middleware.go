@@ -2,6 +2,9 @@ package auth
 
 import (
 	"errors"
+	"net/http"
+	"strings"
+
 	"github.com/gin-gonic/gin"
 	"github.com/sirupsen/logrus"
 )
@@ -20,43 +23,48 @@ func NewAuthMiddleware(authService *Service) *Middleware {
 }
 
 func (h *Middleware) isAuthenticated(c *gin.Context) bool {
-	accessToken, err := c.Cookie("access_token")
-	if err != nil {
-		logrus.Errorf("Error when get access_token cookie %s", err.Error())
-		return false
-	}
+	accessToken := h.getAccessTokenFromHeader(c)
 	if accessToken == "" {
 		logrus.Errorf("Empty auth accessToken")
 		return false
 	}
 	userID, err := h.service.ParseTokenForUserID(accessToken)
-	println("userID", userID)
 	if err != nil || userID == 0 {
 		logrus.Errorf("Invalid or expired access accessToken %s", err.Error())
 		return false
 	}
 
 	c.Set(userCtx, userID)
-	println(c.Get(userCtx))
 
 	return true
 }
 
-func (h *Middleware) WebGuard(c *gin.Context) {
-	isAuth := h.isAuthenticated(c)
-
-	if !isAuth {
-		c.Header("HX-Redirect", "/sign-in")
-		return
+func (h *Middleware) getAccessTokenFromCookies(c *gin.Context) string {
+	accessToken, err := c.Cookie("accessToken")
+	if err != nil {
+		logrus.Errorf("Error when get access_token cookie %s", err.Error())
+		return ""
 	}
+	return accessToken
+}
+func (h *Middleware) getAccessTokenFromHeader(c *gin.Context) string {
+	header := c.GetHeader(authorizationHeader)
+	logrus.Debugln("header", header)
+	accessToken := strings.TrimPrefix(header, "Bearer ")
+	if accessToken == "" {
+		logrus.Errorf("Empty auth accessToken")
+		return ""
+	}
+	return accessToken
 }
 func (h *Middleware) APIGuard(c *gin.Context) {
 	if !h.isAuthenticated(c) {
+		c.AbortWithStatus(http.StatusUnauthorized)
 		return
 	}
 }
 
-func (h *Middleware) GetUserID(c *gin.Context) (int, error) {
+func (h *Middleware) GetUserIDCTX(c *gin.Context) (int, error) {
 	id, ok := c.Get(userCtx)
 	if !ok {
 		logrus.Errorf("User id not found")

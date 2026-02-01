@@ -1,4 +1,4 @@
-package list
+package models
 
 type List struct {
 	ID          int    `json:"id" db:"id"`

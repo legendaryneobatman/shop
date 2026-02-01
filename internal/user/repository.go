@@ -1,22 +1,23 @@
-package auth
+package user
 
 import (
 	"fmt"
+	"go-shop/internal/models"
+	"go-shop/pkg/schema"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"go-shop/internal/user"
-	"go-shop/pkg/schema"
 )
 
-type RepositoryAuth struct {
+type Repository struct {
 	db *sqlx.DB
 }
 
-func NewRepositoryAuth(db *sqlx.DB) *RepositoryAuth {
-	return &RepositoryAuth{db: db}
+func NewRepository(db *sqlx.DB) *Repository {
+	return &Repository{db: db}
 }
 
-func (r *RepositoryAuth) CreateUser(user *user.User) (int, error) {
+func (r *Repository) CreateUser(user *models.User) (int, error) {
 	var id int
 	query := fmt.Sprintf("INSERT INTO %s (name, username, password_hash) values ($1, $2, $3) RETURNING id", schema.UserTable)
 	row := r.db.QueryRow(query, user.Name, user.Username, user.Password)
@@ -26,8 +27,8 @@ func (r *RepositoryAuth) CreateUser(user *user.User) (int, error) {
 	return id, nil
 }
 
-func (r *RepositoryAuth) GetUser(username, password string) (*user.User, error) {
-	var user user.User
+func (r *Repository) GetUser(username, password string) (*models.User, error) {
+	var user models.User
 
 	query := fmt.Sprintf("SELECT id, name, username, password_hash, avatar_url, email, phone, role, is_active, created_at, updated_at FROM %s WHERE username=$1 AND password_hash=$2", schema.UserTable)
 	err := r.db.Get(&user, query, username, password)
@@ -35,8 +36,8 @@ func (r *RepositoryAuth) GetUser(username, password string) (*user.User, error) 
 	return &user, err
 }
 
-func (r *RepositoryAuth) GetUserByID(userID int) (*user.User, error) {
-	var user user.User
+func (r *Repository) GetUserByID(userID int) (*models.User, error) {
+	var user models.User
 	query := fmt.Sprintf(
 		"SELECT id, name, username, password_hash, avatar_url, email, phone, role, is_active, created_at, updated_at FROM %s WHERE id=$1",
 		schema.UserTable,
@@ -50,8 +51,8 @@ func (r *RepositoryAuth) GetUserByID(userID int) (*user.User, error) {
 	return &user, nil
 }
 
-func (r *RepositoryAuth) GetUserByUsername(username string) (*user.User, error) {
-	var user user.User
+func (r *Repository) GetUserByUsername(username string) (*models.User, error) {
+	var user models.User
 	query := fmt.Sprintf(
 		"SELECT id, name, username, password_hash, avatar_url, email, phone, role, is_active, created_at, updated_at FROM %s WHERE username=$1",
 		schema.UserTable,
@@ -65,8 +66,8 @@ func (r *RepositoryAuth) GetUserByUsername(username string) (*user.User, error) 
 	return &user, nil
 }
 
-func (r *RepositoryAuth) GetAll() ([]user.User, error) {
-	users := []user.User{}
+func (r *Repository) GetAll() ([]models.User, error) {
+	users := []models.User{}
 	query := fmt.Sprintf(
 		"SELECT id, name, username, password_hash, avatar_url, email, phone, role, is_active, created_at, updated_at FROM %s",
 		schema.UserTable,

@@ -1,4 +1,4 @@
-package entity
+package models
 
 type RefreshToken struct {
 	ID        int     `json:"id" db:"id"`

@@ -1,0 +1,311 @@
+openapi: 3.0.0
+info:
+  title: Go Shop API
+  version: 1.0.0
+  description: API for a simple shop application.
+servers:
+  - url: http://localhost:8000
+    description: Development server
+paths:
+  /api/sign-up:
+    post:
+      tags:
+        - Auth
+      summary: Register a new user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignUpInput'
+      responses:
+        '200':
+          description: User created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignUpOutput'
+        '400':
+          description: Invalid input or user already exists
+  /api/sign-in:
+    post:
+      tags:
+        - Auth
+      summary: Authenticate a user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/SignInInput'
+      responses:
+        '200':
+          description: Authentication successful
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SignInOutput'
+        '401':
+          description: Invalid credentials
+          content:
+            status
+  /api/refresh:
+    post:
+      tags:
+        - Auth
+      summary: Refresh access token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RefreshInput'
+      responses:
+        '200':
+          description: Tokens refreshed successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RefreshOutput'
+        '401':
+          description: Invalid refresh token
+  /api/logout:
+    post:
+      tags:
+        - Auth
+      summary: Logout user
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LogoutInput'
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Invalid refresh token
+  /api/logout-all:
+    post:
+      tags:
+        - Auth
+      summary: Logout from all devices
+      security:
+        - BearerAuth: []
+      responses:
+        '200':
+          description: Logout successful
+        '401':
+          description: Unauthorized
+  /api/list:
+    post:
+      tags:
+        - Lists
+      summary: Create a new list
+      security:
+        - BearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListInput'
+      responses:
+        '200':
+          description: List created successfully
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  id:
+                    type: integer
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+    get:
+      tags:
+        - Lists
+      summary: Get all lists for a user
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: query
+          name: limit
+          schema:
+            type: integer
+          description: Number of items to return
+        - in: query
+          name: offset
+          schema:
+            type: integer
+          description: Offset for pagination
+      responses:
+        '200':
+          description: A list of lists
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/List'
+        '401':
+          description: Unauthorized
+  /api/list/{id}:
+    get:
+      tags:
+        - Lists
+      summary: Get a list by ID
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: List details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '401':
+          description: Unauthorized
+        '404':
+          description: List not found
+    put:
+      tags:
+        - Lists
+      summary: Update a list
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ListInput'
+      responses:
+        '200':
+          description: List updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/List'
+        '400':
+          description: Invalid input
+        '401':
+          description: Unauthorized
+        '404':
+          description: List not found
+    delete:
+      tags:
+        - Lists
+      summary: Delete a list
+      security:
+        - BearerAuth: []
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: List deleted successfully
+        '401':
+          description: Unauthorized
+        '404':
+          description: List not found
+
+components:
+  schemas:
+    SignUpInput:
+      type: object
+      properties:
+        name:
+          type: string
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - name
+        - username
+        - password
+    SignUpOutput:
+      type: object
+      properties:
+        id:
+          type: integer
+    SignInInput:
+      type: object
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+      required:
+        - username
+        - password
+    SignInOutput:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    RefreshInput:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
+    RefreshOutput:
+      type: object
+      properties:
+        accessToken:
+          type: string
+        refreshToken:
+          type: string
+    LogoutInput:
+      type: object
+      properties:
+        refreshToken:
+          type: string
+      required:
+        - refreshToken
+    List:
+      type: object
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        user_id:
+          type: integer
+    ListInput:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+      required:
+        - title
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer

@@ -1,15 +1,17 @@
 package main
 
 import (
+	todo "go-shop"
+	"go-shop/internal/bootstrap"
+	"os"
+
+	"github.com/gin-contrib/cors"
 	"github.com/gin-gonic/gin"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/joho/godotenv"
 	"github.com/sirupsen/logrus"
 	"github.com/spf13/viper"
-	todo "go-shop"
-	"go-shop/internal/handler"
-	"os"
 )
 
 func main() {
@@ -31,7 +33,13 @@ func main() {
 
 	router := gin.Default()
 	router.LoadHTMLGlob("templates/**/*")
-	routesHandler := handler.NewHandler(db)
+	router.Use(cors.New(cors.Config{
+		AllowAllOrigins: true,
+		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},
+		AllowHeaders:    []string{"Origin", "Content-Type", "Accept", "Authorization"},
+	}))
+	cors.Default()
+	routesHandler := bootstrap.NewHandler(db)
 	routesHandler.Init(router)
 
 	server := new(todo.Server)

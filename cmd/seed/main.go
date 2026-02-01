@@ -2,25 +2,26 @@ package main
 
 import (
 	"fmt"
+	repo2 "go-shop/internal/list"
+	"go-shop/internal/models"
+	entity2 "go-shop/internal/user"
+	"log"
+	"os"
+
 	"github.com/brianvoe/gofakeit/v7"
 	_ "github.com/jackc/pgx/v5/stdlib"
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"go-shop/internal/auth"
-	repo2 "go-shop/internal/list"
-	entity2 "go-shop/internal/user"
-	"log"
-	"os"
 )
 
 const passwordLength = 8
 
 type Seeder struct {
 	listRepo *repo2.Repository
-	authRepo *auth.RepositoryAuth
+	authRepo *entity2.Repository
 }
 
-func NewSeeder(_listRepo *repo2.Repository, _authRepo *auth.RepositoryAuth) *Seeder {
+func NewSeeder(_listRepo *repo2.Repository, _authRepo *entity2.Repository) *Seeder {
 	return &Seeder{
 		listRepo: _listRepo,
 		authRepo: _authRepo,
@@ -43,7 +44,7 @@ func main() {
 	log.Println("Connected to DB for seeding...")
 
 	listRepo := repo2.NewRepository(db)
-	authRepo := auth.NewRepositoryAuth(db)
+	authRepo := entity2.NewRepository(db)
 
 	seed := NewSeeder(listRepo, authRepo)
 
@@ -76,7 +77,7 @@ func (s *Seeder) SeedLists(countPerUser int) error {
 	})()
 
 	for _, userEl := range users {
-		newList := repo2.List{
+		newList := models.List{
 			UserID:      userEl.ID,
 			Title:       gofakeit.BookTitle(),
 			Description: gofakeit.ProductDescription(),
@@ -102,7 +103,7 @@ func (s *Seeder) SeedLists(countPerUser int) error {
 
 func (s *Seeder) SeedUsers(size int) {
 	for range make([]int, size) {
-		newUser := entity2.User{
+		newUser := models.User{
 			Name:     gofakeit.Name(),
 			Username: gofakeit.Username(),
 			Password: gofakeit.Password(false, false, false, false, false, passwordLength),

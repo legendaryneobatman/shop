@@ -2,7 +2,11 @@ package list
 
 import (
 	"fmt"
+	"go-shop/internal/models"
+
 	"github.com/jmoiron/sqlx"
+	"github.com/sirupsen/logrus"
+
 	"go-shop/pkg/schema"
 )
 
@@ -14,40 +18,30 @@ func NewRepository(db *sqlx.DB) *Repository {
 	return &Repository{db: db}
 }
 
-func (lr *Repository) Create(userID int, list List) (int, error) {
-	tx, err := lr.db.Begin()
+func (r *Repository) Create(userID int, input models.List) (int, error) {
+	var list models.List
+	query := fmt.Sprintf("INSERT INTO %s (user_id, title, description) VALUES ($1, $2, $3) RETURNING id, user_id, title, description", schema.ListTable)
+	row := r.db.QueryRow(query, userID, input.Title, input.Description)
+	err := row.Scan(&list.ID, &list.Title, &list.Description, &list.UserID)
 	if err != nil {
+		logrus.Errorf("error while creating list: %v", err)
 		return 0, err
 	}
 
-	var id int
-	var _userID int
-	var title string
-	var description string
-	createListQuery := fmt.Sprintf("INSERT INTO %s (_userID, title, description) VALUES ($1, $2, $3) RETURNING *", schema.ListTable)
-	row := tx.QueryRow(createListQuery, userID, list.Title, list.Description)
-	if err := row.Scan(&id, &title, &description, &_userID); err != nil {
-		err := tx.Rollback()
-		if err != nil {
-			return 0, err
-		}
-		return 0, err
-	}
-
-	return id, tx.Commit()
+	return list.ID, nil
 }
 
-func (lr *Repository) GetAll(userID int) ([]List, error) {
-	var lists []List
+func (r *Repository) GetAll(userID int) ([]models.List, error) {
+	var lists []models.List
 	query := fmt.Sprintf("SELECT id, title, description, user_id FROM %s WHERE user_id = $1", schema.ListTable)
-	rows, err := lr.db.Query(query, userID)
+	rows, err := r.db.Query(query, userID)
 	if err != nil {
 		return nil, err
 	}
 	defer rows.Close()
 	for rows.Next() {
-		var list List
-		if err := rows.Scan(&list.ID, &list.UserID, &list.Title, &list.Description); err != nil {
+		var list models.List
+		if err := rows.Scan(&list.ID, &list.Title, &list.Description, &list.UserID); err != nil {
 			return nil, err
 		}
 		lists = append(lists, list)
@@ -58,39 +52,57 @@ func (lr *Repository) GetAll(userID int) ([]List, error) {
 	return lists, nil
 }
 
-func (lr *Repository) GetByID(listID string) (List, error) {
-	var list List
+func (r *Repository) GetByID(listID string) (models.List, error) {
+	var list models.List
 	query := fmt.Sprintf("SELECT id, title, description, user_id FROM %s WHERE id = $1", schema.ListTable)
-	row := lr.db.QueryRow(query, listID)
+	row := r.db.QueryRow(query, listID)
 	if err := row.Scan(&list.ID, &list.UserID, &list.Title, &list.Description); err != nil {
-		return List{}, err
+		return models.List{}, err
 	}
 	return list, nil
 }
 
-func (lr *Repository) Update(listID string, input List) (List, error) {
-	var list List
+func (r *Repository) Update(listID string, input models.List) (models.List, error) {
+	var list models.List
 	query := fmt.Sprintf("UPDATE %s SET title = $1, description = $2 WHERE id = $3 RETURNING *", schema.ListTable)
-	row := lr.db.QueryRow(query, input.Title, input.Description, listID)
+	row := r.db.QueryRow(query, input.Title, input.Description, listID)
 	if err := row.Scan(&list.ID, &list.UserID, &list.Title, &list.Description); err != nil {
-		return List{}, err
+		return models.List{}, err
 	}
 
 	return list, nil
 }
 
-func (lr *Repository) GetWithPagination(userID int, limit int, offset int) ([]List, error) {
-	var lists []List
+func (r *Repository) GetWithPagination(userID int, limit int, offset int) ([]models.List, error) {
+	var lists []models.List
 
 	query := fmt.Sprintf(`
         SELECT id, title, description 
         FROM %s 
         WHERE user_id = $1 
-        ORDER BY id DESC 
         LIMIT $2 OFFSET $3`,
 		schema.ListTable,
 	)
 
-	err := lr.db.Select(&lists, query, userID, limit, offset)
+	err := r.db.Select(&lists, query, userID, limit, offset)
 	return lists, err
+}
+
+func (r *Repository) Delete(iDs []string) ([]string, error) {
+	var deleteIds []string
+	query := fmt.Sprintf("DELETE FROM %s WHERE id IN($1) RETURNING id", schema.ListTable)
+	rows, err := r.db.Query(query, iDs)
+	if err != nil {
+		logrus.Errorf("error while deleting lists: %v", err)
+		return nil, err
+	}
+	defer rows.Close()
+	for rows.Next() {
+		var id string
+		if err := rows.Scan(&id); err != nil {
+			return nil, err
+		}
+		deleteIds = append(deleteIds, id)
+	}
+	return deleteIds, nil
 }

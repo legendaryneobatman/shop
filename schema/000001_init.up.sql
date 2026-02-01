@@ -49,12 +49,89 @@ CREATE TABLE lists
     user_id     int references users (id) on delete cascade not null
 );
 
-CREATE TABLE todos
+CREATE TABLE categories
 (
-    id          serial       not null unique,
-    title       varchar(255) not null,
-    description varchar(255),
-    done        boolean      not null default false,
+    id               serial primary key,
+    parent_id        int references categories (id) on delete cascade, -- Иерархия категорий
+    name             varchar(255)        not null,
+    slug             varchar(255) unique not null,
+    description      text,
+    image_url        varchar(500),
 
-    list_id     int references lists (id) on delete cascade
+    -- Для сортировки и отображения
+    display_order    int       default 0,
+    is_active        bool      default true,
+
+    -- SEO
+    meta_title       varchar(255),
+    meta_description varchar(500),
+    meta_keywords    varchar(500),
+
+    -- Технические поля
+    created_at       timestamp default now(),
+    updated_at       timestamp default now(),
+
+    -- Для иерархических запросов (опционально)
+    level            int       default 0,
+    path             varchar(1000)                                     -- Путь вида "1/3/5" для быстрых запросов
+);
+
+create table products
+(
+    id serial primary key,
+    sku varchar(50) unique not null,
+    name varchar(255) not null,
+    slug varchar(255) unique not null,
+    description text,
+    short_description varchar(500),
+    price decimal(10, 2) not null,
+    old_price decimal(10, 2),
+
+    category_id int references categories(id) on delete set null,
+    brand_id int references brands(id) on delete set null,
+
+    quantity int not null default 0,
+    low_stock_threshold int default 5,
+
+    main_image_url varchar(500),
+    weight decimal(8, 2),
+    dimensions varchar(100),
+
+    is_active boolean default true,
+    is_featured boolean default false,
+    is_new boolean default false,
+    rating decimal(3, 2) default 0.0,
+    review_count int default 0,
+
+    created_at timestamp default now(),
+    updated_at timestamp default now(),
+    meta_title varchar(255),
+    meta_description varchar(500),
+    meta_keywords varchar(500)
+);
+
+create table brands
+(
+    id               serial primary key,
+    name             varchar(255)        not null,
+    slug             varchar(255) unique not null,
+    description      text,
+    logo_url         varchar(500),
+    website_url      varchar(500),
+
+    -- статус
+    is_active        boolean   default true,
+    is_featured      boolean   default false, -- для вывода в блоке "популярные бренды"
+
+    -- для сортировки
+    display_order    int       default 0,
+
+    -- seo
+    meta_title       varchar(255),
+    meta_description varchar(500),
+    meta_keywords    varchar(500),
+
+    -- технические поля
+    created_at       timestamp default now(),
+    updated_at       timestamp default now()
 );

@@ -1,24 +1,28 @@
 package list
 
 import (
-	"github.com/gin-gonic/gin"
-	"github.com/sirupsen/logrus"
-	"go-shop/internal/auth"
+	"go-shop/internal/models"
 	"go-shop/pkg/webtool"
 	"net/http"
 	"strconv"
+
+	"github.com/gin-gonic/gin"
 )
+
+type IAuthMiddleware interface {
+	GetUserIDCTX(c *gin.Context) (int, error)
+}
 
 type Handler struct {
 	Service        *Service
-	authService    *auth.Service
-	authMiddleware *auth.Middleware
+	errors         *Errors
+	authMiddleware IAuthMiddleware
 }
 
-func NewHandler(service *Service, authService *auth.Service, authMiddleware *auth.Middleware) *Handler {
+func NewHandler(service *Service, errors *Errors, authMiddleware IAuthMiddleware) *Handler {
 	return &Handler{
 		Service:        service,
-		authService:    authService,
+		errors:         errors,
 		authMiddleware: authMiddleware,
 	}
 }
@@ -26,115 +30,105 @@ func NewHandler(service *Service, authService *auth.Service, authMiddleware *aut
 func (h *Handler) InitRoutes(api *gin.RouterGroup) {
 	group := api.Group("/list")
 
-	group.POST("", h.CreateList)
-	group.GET("", h.GetLists)
-	group.GET(":id", h.GetListByID)
-	group.PUT(":id", h.UpdateList)
-	group.DELETE(":id", h.DeleteList)
+	group.POST("", webtool.MakeHandler(h.CreateList))
+	group.GET("", webtool.MakeHandler(h.GetLists))
+	group.GET(":id", webtool.MakeHandler(h.GetListByID))
+	group.PUT(":id", webtool.MakeHandler(h.UpdateList))
+	group.DELETE(":id", webtool.MakeHandler(h.DeleteList))
 }
 
-func (h *Handler) CreateList(c *gin.Context) {
-	userID, err := h.authMiddleware.GetUserID(c)
+func (h *Handler) CreateList(c *gin.Context) *webtool.APIError {
+	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		return
+		return h.errors.NoUserFound
 	}
 
-	var input List
+	var input models.List
 	if err := c.BindJSON(&input); err != nil {
-		webtool.NewErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
+		return h.errors.BadRequest
 	}
 
 	id, err := h.Service.Create(userID, input)
 	if err != nil {
-		webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return h.errors.CantCreate
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
 		"id": id,
 	})
+
+	return nil
 }
 
-func (h *Handler) GetLists(c *gin.Context) {
-	userID, err := h.authMiddleware.GetUserID(c)
+func (h *Handler) GetLists(c *gin.Context) *webtool.APIError {
+	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		return
+		return h.errors.NoUserFound
 	}
 
-	limitStr := c.Query("limit")
-	offsetStr := c.Query("offset")
-
-	if limitStr == "" && offsetStr == "" {
-		lists, err := h.Service.GetAll(userID)
-		if err != nil {
-			webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
-			return
-		}
-		c.JSON(http.StatusOK, lists)
-		return
-	}
-
-	limit, _ := strconv.Atoi(limitStr)
-	offset, _ := strconv.Atoi(offsetStr)
-
-	lists, err := h.Service.GetWithPagination(userID, limit, offset)
+	lists, err := h.Service.GetAll(userID)
 	if err != nil {
-		webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return h.errors.CantFindElements
 	}
 
 	c.JSON(http.StatusOK, lists)
+	return nil
 }
 
-func (h *Handler) GetListByID(c *gin.Context) {
-	list, err := h.Service.GetByID(c.Param("id"))
+func (h *Handler) GetListWithPagination(c *gin.Context) *webtool.APIError {
+	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
-	}
-
-	c.JSON(http.StatusOK, list)
-}
-
-func (h *Handler) GetListWithPagination(c *gin.Context) {
-	userID, err := h.authMiddleware.GetUserID(c)
-	if err != nil {
-		logrus.Errorf("Failed to get user id from context: %s", err.Error())
+		return h.errors.NoUserFound
 	}
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {
-		logrus.Errorf("Failed to pars query: limit error: %s", err.Error())
+		return h.errors.InvalidPagination
 	}
 	offset, err := strconv.Atoi(c.Query("offset"))
 	if err != nil {
-		logrus.Errorf("Failed to pars query: offset error: %s", err.Error())
+		return h.errors.InvalidPagination
 	}
 
 	list, err := h.Service.GetWithPagination(userID, limit, offset)
 	if err != nil {
-		logrus.Errorf("Failed to get list from list service: %s", err.Error())
-		webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
+		return h.errors.CantFindElements
 	}
 
 	c.JSON(http.StatusOK, list)
+
+	return nil
 }
 
-func (h *Handler) UpdateList(c *gin.Context) {
-	updatedList := List{}
+func (h *Handler) GetListByID(c *gin.Context) *webtool.APIError {
+	list, err := h.Service.GetByID(c.Param("id"))
+	if err != nil {
+		return h.errors.CantFindElements
+	}
+
+	c.JSON(http.StatusOK, list)
+
+	return nil
+}
+
+func (h *Handler) UpdateList(c *gin.Context) *webtool.APIError {
+	updatedList := models.List{}
 	if err := c.BindJSON(&updatedList); err != nil {
-		webtool.NewErrorResponse(c, http.StatusBadRequest, err.Error())
-		return
+		return h.errors.BadRequest
 	}
 	list, err := h.Service.Update(c.Param("id"), updatedList)
 	if err != nil {
-		webtool.NewErrorResponse(c, http.StatusInternalServerError, err.Error())
-		return
+		return h.errors.CantFindElements
 	}
 
 	c.JSON(http.StatusOK, list)
+
+	return nil
 }
 
-func (h *Handler) DeleteList(_ *gin.Context) {
+func (h *Handler) DeleteList(c *gin.Context) *webtool.APIError {
+	if err := h.Service.Delete(c.Param("id")); err != nil {
+		return h.errors.CantFindElements
+	}
 
+	return nil
 }

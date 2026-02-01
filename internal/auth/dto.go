@@ -10,11 +10,23 @@ type SignUpOutput struct {
 }
 
 type SignInInput struct {
-	Username string `json:"username" binding:"required"`
-	Password string `json:"password" binding:"required"`
+	Name     string `json:"name,omitempty"`
+	Username string `json:"username" binding:"required" json:"username"`
+	Password string `json:"password" binding:"required" json:"password"`
+}
+type SignInOutput struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
 }
 
-type SignInOutput struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+type RefreshInput struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
+}
+type RefreshOutput struct {
+	AccessToken  string `json:"accessToken"`
+	RefreshToken string `json:"refreshToken"`
+}
+
+type LogoutInput struct {
+	RefreshToken string `json:"refreshToken" binding:"required"`
 }

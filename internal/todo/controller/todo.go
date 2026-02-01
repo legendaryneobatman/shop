@@ -2,11 +2,12 @@ package controller
 
 import (
 	"github.com/gin-gonic/gin"
-	"go-shop/internal/list"
 )
 
+type IListService interface{}
+
 type TodoController struct {
-	listService list.Service
+	listService IListService
 }
 
 func (todoController *TodoController) CreateTodo(_ *gin.Context) {

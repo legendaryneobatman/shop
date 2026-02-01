@@ -2,7 +2,9 @@ package schema
 
 const (
 	UserTable         = "users"
-	ListTable         = "lists"
-	TodoTable         = "todos"
 	RefreshTokenTable = "refresh_tokens"
+	ListTable         = "lists"
+	ProductTable      = "products"
+	CategoryTable     = "categories"
+	BrandTable        = "brands"
 )

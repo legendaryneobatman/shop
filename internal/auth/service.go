@@ -5,15 +5,16 @@ import (
 	"database/sql"
 	"encoding/hex"
 	"errors"
-	"github.com/dgrijalva/jwt-go"
-	"github.com/google/uuid"
-	"github.com/sirupsen/logrus"
+	"go-shop/internal/models"
 	"go-shop/internal/user"
-	"go-shop/internal/user/entity"
-	"golang.org/x/crypto/bcrypt"
 	"os"
 	"strconv"
 	"time"
+
+	"github.com/dgrijalva/jwt-go"
+	"github.com/google/uuid"
+	"github.com/sirupsen/logrus"
+	"golang.org/x/crypto/bcrypt"
 )
 
 const (
@@ -21,10 +22,6 @@ const (
 	refreshTokenTTL = 7 * 24 * time.Hour
 )
 
-type TokenPair struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
-}
 type tokenClaims struct {
 	jwt.StandardClaims
 	UserID int `json:"user_id"`
@@ -34,12 +31,12 @@ type Service struct {
 	AccessTokenTTL  time.Duration
 	RefreshTokenTTL time.Duration
 	jwtSecretKey    []byte
-	rAuth           *RepositoryAuth
+	rUser           *user.Repository
 	rToken          *RepositoryToken
 	errors          *Errors
 }
 
-func NewAuthService(ra *RepositoryAuth, rt *RepositoryToken, errors *Errors) *Service {
+func NewAuthService(rUser *user.Repository, rt *RepositoryToken, errors *Errors) *Service {
 	secret := os.Getenv("JWT_SECRET_KEY")
 	if secret == "" {
 		logrus.Fatalf("JWT_SECRET_KEY is not set in enviroment")
@@ -47,41 +44,26 @@ func NewAuthService(ra *RepositoryAuth, rt *RepositoryToken, errors *Errors) *Se
 	return &Service{
 		AccessTokenTTL:  accessTokenTTL,
 		RefreshTokenTTL: refreshTokenTTL,
-		rAuth:           ra,
-		errors:          errors,
-		rToken:          rt,
 		jwtSecretKey:    []byte(secret),
+		rUser:           rUser,
+		rToken:          rt,
+		errors:          errors,
 	}
 }
 
-func (s *Service) CreateUser(input *SignUpInput) (user.User, error) {
-	input.Password = string(s.generatePasswordHash(input.Password))
-	user := user.User{
-		Name:     input.Name,
-		Username: input.Username,
-		Password: input.Password,
-	}
-	id, err := s.rAuth.CreateUser(&user)
+func (s *Service) Authenticate(username, password string) (*models.TokenPair, error) {
+	_user, err := s.rUser.GetUserByUsername(username)
 	if err != nil {
-		logrus.Errorf("Error when CreateUser %s", err.Error())
-		return user, err
-	}
-	user.ID = id
-	return user, nil
-}
-func (s *Service) Authenticate(username, password string) (*TokenPair, error) {
-	user, err := s.rAuth.GetUserByUsername(username)
-	if err != nil {
-		logrus.Errorf("Error when trying to get user for verify %s", err.Error())
+		logrus.Errorf("Error when trying to get _user for verify %s", err.Error())
 		return nil, err
 	}
 
-	if err := bcrypt.CompareHashAndPassword([]byte(user.Password), []byte(password)); err != nil {
+	if err := bcrypt.CompareHashAndPassword([]byte(_user.Password), []byte(password)); err != nil {
 		logrus.Errorf("Error when compare hesh in Authenticate %s", err.Error())
 		return nil, err
 	}
 
-	accessToken, err := s.generateAccessToken(user.ID)
+	accessToken, err := s.generateAccessToken(_user.ID)
 	if err != nil {
 		logrus.Errorf("Error when try to generate access token in Authenticate %s", err.Error())
 		return nil, err
@@ -93,7 +75,7 @@ func (s *Service) Authenticate(username, password string) (*TokenPair, error) {
 		return nil, err
 	}
 
-	return &TokenPair{
+	return &models.TokenPair{
 		AccessToken:  accessToken,
 		RefreshToken: refreshToken,
 	}, nil
@@ -124,7 +106,7 @@ func (s *Service) ParseTokenForUserID(accessToken string) (int, error) {
 
 	return claims.UserID, nil
 }
-func (s *Service) RefreshTokens(refreshToken string) (*TokenPair, error) {
+func (s *Service) RefreshTokens(refreshToken string) (*models.TokenPair, error) {
 	hash := sha256.Sum256([]byte(refreshToken))
 	tHash := hex.EncodeToString(hash[:])
 
@@ -152,13 +134,13 @@ func (s *Service) RefreshTokens(refreshToken string) (*TokenPair, error) {
 		return nil, err
 	}
 
-	user, err := s.rAuth.GetUserByID(storedRefreshT.UserID)
+	_user, err := s.rUser.GetUserByID(storedRefreshT.UserID)
 	if err != nil {
-		logrus.Errorf("Error when geting user by id %s", err.Error())
+		logrus.Errorf("Error when geting _user by id %s", err.Error())
 		return nil, err
 	}
 
-	newAccessToken, err := s.generateAccessToken(user.ID)
+	newAccessToken, err := s.generateAccessToken(_user.ID)
 	if err != nil {
 		logrus.Errorf("Failed to generate access token %s", err.Error())
 		return nil, err
@@ -174,9 +156,8 @@ func (s *Service) RefreshTokens(refreshToken string) (*TokenPair, error) {
 		logrus.Errorf("Failed to generate refresh token %s", err.Error())
 		return nil, err
 	}
-
-	newTokenEntity := entity.RefreshToken{
-		UserID:    user.ID,
+	newTokenEntity := models.RefreshToken{
+		UserID:    _user.ID,
 		TokenHash: newRefreshTokenHash,
 		ExpiresAt: time.Now().Add(s.RefreshTokenTTL).String(),
 		Revoked:   nil,
@@ -186,7 +167,7 @@ func (s *Service) RefreshTokens(refreshToken string) (*TokenPair, error) {
 		return nil, err
 	}
 
-	return &TokenPair{
+	return &models.TokenPair{
 		AccessToken:  newAccessToken,
 		RefreshToken: newRefreshToken,
 	}, nil
@@ -217,14 +198,6 @@ func (s *Service) RevokeAllTokens(userID int) error {
 	return nil
 }
 
-func (s *Service) generatePasswordHash(password string) []byte {
-	hash, err := bcrypt.GenerateFromPassword([]byte(password), bcrypt.DefaultCost)
-	if err != nil {
-		logrus.Errorf("Failed to encrypt password error: %s", err.Error())
-	}
-
-	return hash
-}
 func (s *Service) generateRefreshToken() (token string, tokenHash string, err error) {
 	token = uuid.New().String()
 

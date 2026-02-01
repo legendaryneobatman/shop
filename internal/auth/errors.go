@@ -15,7 +15,7 @@ type Errors struct {
 func NewAuthErrors() *Errors {
 	return &Errors{
 		UserAlreadyExists:  webtool.NewAPIError("user with this username already exists", http.StatusBadRequest),
-		InvalidCredentials: webtool.NewAPIError("invalid username or password", http.StatusInternalServerError),
+		InvalidCredentials: webtool.NewAPIError("invalid username or password", http.StatusBadRequest),
 		NoTokenFound:       webtool.NewAPIError("no token found", http.StatusInternalServerError),
 		UserUnauthorized:   webtool.NewAPIError("user unauthorized", http.StatusUnauthorized),
 	}

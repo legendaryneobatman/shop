@@ -2,19 +2,12 @@ package auth
 
 import (
 	"fmt"
+	"go-shop/internal/models"
+	"go-shop/pkg/schema"
+
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
-	"go-shop/internal/user/entity"
-	"go-shop/pkg/schema"
 )
-
-type ITokenRepository interface {
-	SaveRefreshToken(token entity.RefreshToken) error
-	GetRefreshTokenByHash(hash string) (*entity.RefreshToken, error)
-	GetRefreshTokensByUserID(userID int) ([]*entity.RefreshToken, error)
-	RevokeRefreshToken(tokenID string) error
-	RevokeAllUserTokens(userID int) error
-}
 
 type RepositoryToken struct {
 	db *sqlx.DB
@@ -24,7 +17,7 @@ func NewRepositoryToken(_db *sqlx.DB) *RepositoryToken {
 	return &RepositoryToken{db: _db}
 }
 
-func (r *RepositoryToken) SaveRefreshToken(token entity.RefreshToken) error {
+func (r *RepositoryToken) SaveRefreshToken(token models.RefreshToken) error {
 	query := fmt.Sprintf("INSERT INTO %s (user_id,expires_at,ip_address,user_agent,revoked) values ($1, $2,$3, $4, $5)", schema.RefreshTokenTable)
 	row := r.db.QueryRow(
 		query,
@@ -44,8 +37,8 @@ func (r *RepositoryToken) SaveRefreshToken(token entity.RefreshToken) error {
 	}
 	return nil
 }
-func (r *RepositoryToken) GetRefreshTokenByHash(hash string) (*entity.RefreshToken, error) {
-	refreshToken := &entity.RefreshToken{}
+func (r *RepositoryToken) GetRefreshTokenByHash(hash string) (*models.RefreshToken, error) {
+	refreshToken := &models.RefreshToken{}
 
 	query := fmt.Sprintf(
 		"SELECT id, user_id, token_hash, expires_at, ip_address, user_agent, revoked FROM %s WHERE token_hash=$1",
@@ -59,7 +52,7 @@ func (r *RepositoryToken) GetRefreshTokenByHash(hash string) (*entity.RefreshTok
 
 	return refreshToken, nil
 }
-func (r *RepositoryToken) GetRefreshTokensByUserID(userID int) ([]entity.RefreshToken, error) {
+func (r *RepositoryToken) GetRefreshTokensByUserID(userID int) ([]models.RefreshToken, error) {
 	query := fmt.Sprintf(
 		"SELECT id, user_id, token_hash, expires_at, ip_address, user_agent, revoked FROM %s WHERE user_id=$1",
 		schema.RefreshTokenTable,
@@ -75,9 +68,9 @@ func (r *RepositoryToken) GetRefreshTokensByUserID(userID int) ([]entity.Refresh
 		return nil, err
 	}
 
-	var refreshTokens []entity.RefreshToken
+	var refreshTokens []models.RefreshToken
 	for rows.Next() {
-		var rf entity.RefreshToken
+		var rf models.RefreshToken
 
 		if err := rows.StructScan(&rf); err != nil {
 			logrus.Fatalf("Error when scaning rows for GetRefreshTokensByUserID %s", err.Error())
