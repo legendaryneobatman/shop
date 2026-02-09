@@ -1,7 +1,7 @@
 package main
 
 import (
-	todo "go-shop"
+	shop "go-shop"
 	"go-shop/internal/bootstrap"
 	"os"
 
@@ -41,7 +41,7 @@ func main() {
 	routesHandler := bootstrap.NewHandler(db)
 	routesHandler.Init(router)
 
-	server := new(todo.Server)
+	server := new(shop.Server)
 	if err := server.Run(viper.GetString("port"), router); err != nil {
 		logrus.Fatalf("error occured while running http server: %s", err.Error())
 	}
