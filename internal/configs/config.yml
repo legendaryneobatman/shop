@@ -1,6 +1,7 @@
 port: "8000"
 
 db:
+  url: ${SHARED_DB_URL}
   port: ${SHARED_DB_PORT}
   user: ${SHARED_DB_USER}
   host: ${SHARED_DB_HOST}
