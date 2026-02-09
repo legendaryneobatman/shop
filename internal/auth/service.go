@@ -11,7 +11,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/dgrijalva/jwt-go"
+	"github.com/golang-jwt/jwt/v5"
 	"github.com/google/uuid"
 	"github.com/sirupsen/logrus"
 	"golang.org/x/crypto/bcrypt"
@@ -23,7 +23,7 @@ const (
 )
 
 type tokenClaims struct {
-	jwt.StandardClaims
+	jwt.RegisteredClaims
 
 	UserID int `json:"user_id"`
 }
@@ -207,9 +207,9 @@ func (s *Service) generateRefreshToken() (token string, tokenHash string, err er
 }
 func (s *Service) generateAccessToken(userID int) (string, error) {
 	claims := &tokenClaims{
-		StandardClaims: jwt.StandardClaims{
-			ExpiresAt: time.Now().Add(s.AccessTokenTTL).Unix(),
-			IssuedAt:  time.Now().Unix(),
+		RegisteredClaims: jwt.RegisteredClaims{
+			ExpiresAt: jwt.NewNumericDate(time.Now().Add(s.AccessTokenTTL)),
+			IssuedAt:  jwt.NewNumericDate(time.Now()),
 			Subject:   strconv.Itoa(userID),
 		},
 		UserID: userID,
