@@ -15,3 +15,4 @@ var CantUpdateOrder = webtool.MakeError("cant update category order", http.Statu
 var CantUpdateStatus = webtool.MakeError("cant update category status", http.StatusInternalServerError)
 var CantGetList = webtool.MakeError("cant get category list", http.StatusInternalServerError)
 var CantGetTree = webtool.MakeError("cant get tree", http.StatusInternalServerError)
+var NoSlug = webtool.MakeError("empty or no slug provided", http.StatusInternalServerError)

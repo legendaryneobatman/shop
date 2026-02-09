@@ -111,3 +111,9 @@ func (r *Service) GetCategories() ([]models.Category, error) {
 	}
 	return categories, nil
 }
+
+func (r *Service) GetCategoryBySlug(slug string) (*models.Category, error) {
+	category, err := r.repository.GetBySlug(slug)
+	if err != nil {return nil, err}
+	return category, nil
+}

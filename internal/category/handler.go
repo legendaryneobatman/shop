@@ -1,6 +1,7 @@
 package category
 
 import (
+	"errors"
 	"go-shop/internal/models"
 	"go-shop/pkg/webtool"
 	"net/http"
@@ -97,7 +98,7 @@ func (h *Handler) Update(c *gin.Context) *webtool.APIError {
 	return nil
 }
 func (h *Handler) Delete(c *gin.Context) *webtool.APIError {
-	ID, err := strconv.Atoi(c.Param("ID"))
+	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return NoID(err)
 	}
@@ -117,7 +118,7 @@ func (h *Handler) UpdateOder(c *gin.Context) *webtool.APIError {
 	if err != nil {
 		return BadInput(err)
 	}
-	ID, err := strconv.Atoi(c.Param("ID"))
+	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return NoID(err)
 	}
@@ -136,7 +137,7 @@ func (h *Handler) UpdateStatus(c *gin.Context) *webtool.APIError {
 	if err != nil {
 		return BadInput(err)
 	}
-	ID, err := strconv.Atoi(c.Param("ID"))
+	ID, err := strconv.Atoi(c.Param("id"))
 	if err != nil {
 		return NoID(err)
 	}
@@ -180,6 +181,17 @@ func (h *Handler) GetFlat(c *gin.Context) *webtool.APIError {
 }
 
 func (h *Handler) GetBySlug(c *gin.Context) *webtool.APIError {
+	slug := c.Param("slug")
+
+	if slug == "" {
+		return NoSlug(errors.New("no slug"))
+	}
+	category, err := h.service.GetCategoryBySlug(slug)
+	if err != nil {
+		return CantFind(err)
+	}
+
+	c.JSON(http.StatusOK, ToGetBySlugResponseDTO(category))
 	return nil
 }
 

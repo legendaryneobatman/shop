@@ -291,3 +291,41 @@ func ToUpdateStatusResponseDTO(input *models.Category) *UpdateStatusResponseDTO 
 		Path:            input.Path,
 	}
 }
+
+type GetBySlugRequestDTO struct {}
+type GetBySlugResponseDTO struct {
+	ID              int       `json:"id"`
+	ParentID        *int      `json:"parentId"`
+	Name            string    `json:"name"`
+	Slug            string    `json:"slug"`
+	Description     *string   `json:"description"`
+	ImageUrl        *string   `json:"imageUrl"`
+	DisplayOrder    int       `json:"displayOrder"`
+	IsActive        bool      `json:"isActive"`
+	MetaTitle       *string   `json:"metaTitle"`
+	MetaDescription *string   `json:"metaDescription"`
+	MetaKeywords    *string   `json:"metaKeywords"`
+	CreatedAt       time.Time `json:"createdAt"`
+	UpdatedAt       time.Time `json:"updatedAt"`
+	Level           int       `json:"level"`
+	Path            *string   `json:"path"`
+}
+func ToGetBySlugResponseDTO(input *models.Category) *GetBySlugResponseDTO {
+	return &GetBySlugResponseDTO{
+		ID:              input.ID,
+		ParentID:        input.ParentID,
+		Name:            input.Name,
+		Slug:            input.Slug,
+		Description:     input.Description,
+		ImageUrl:        input.ImageUrl,
+		DisplayOrder:    input.DisplayOrder,
+		IsActive:        input.IsActive,
+		MetaTitle:       input.MetaTitle,
+		MetaDescription: input.MetaDescription,
+		MetaKeywords:    input.MetaKeywords,
+		CreatedAt:       input.CreatedAt,
+		UpdatedAt:       input.UpdatedAt,
+		Level:           input.Level,
+		Path:            input.Path,
+	}
+}

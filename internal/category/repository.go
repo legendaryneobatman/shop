@@ -278,3 +278,22 @@ func (r *Repository) BuildCategoryPath(slug string, parentID *int) (string, erro
 
 	return fmt.Sprintf("/%s/%s/", parent.Slug, slug), nil
 }
+
+func (r *Repository) GetBySlug(slug string) (*models.Category, error) {
+	query := `
+        SELECT id, parent_id, name, slug, description, image_url,
+               display_order, is_active, meta_title, meta_description,
+               meta_keywords, created_at, updated_at, level, path
+        FROM categories
+        WHERE slug = $1
+    `
+
+	var category models.Category
+	err := r.db.Get(&category, query, slug)
+	if err != nil {
+		logrus.Errorf("Error getting category by slug: %s", err.Error())
+		return nil, err
+	}
+
+	return &category, nil
+}
