@@ -32,7 +32,6 @@ func main() {
 	}
 
 	router := gin.Default()
-	router.LoadHTMLGlob("templates/**/*")
 	router.Use(cors.New(cors.Config{
 		AllowAllOrigins: true,
 		AllowMethods:    []string{"GET", "POST", "PUT", "DELETE"},

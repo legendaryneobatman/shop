@@ -24,6 +24,7 @@ const (
 
 type tokenClaims struct {
 	jwt.StandardClaims
+
 	UserID int `json:"user_id"`
 }
 
@@ -33,10 +34,9 @@ type Service struct {
 	jwtSecretKey    []byte
 	rUser           *user.Repository
 	rToken          *RepositoryToken
-	errors          *Errors
 }
 
-func NewAuthService(rUser *user.Repository, rt *RepositoryToken, errors *Errors) *Service {
+func NewAuthService(rUser *user.Repository, rt *RepositoryToken) *Service {
 	secret := os.Getenv("JWT_SECRET_KEY")
 	if secret == "" {
 		logrus.Fatalf("JWT_SECRET_KEY is not set in enviroment")
@@ -47,7 +47,6 @@ func NewAuthService(rUser *user.Repository, rt *RepositoryToken, errors *Errors)
 		jwtSecretKey:    []byte(secret),
 		rUser:           rUser,
 		rToken:          rt,
-		errors:          errors,
 	}
 }
 
@@ -112,7 +111,7 @@ func (s *Service) RefreshTokens(refreshToken string) (*models.TokenPair, error) 
 
 	storedRefreshT, err := s.rToken.GetRefreshTokenByHash(tHash)
 	if err != nil && errors.Is(err, sql.ErrNoRows) {
-		return nil, s.errors.NoTokenFound.Error
+		return nil, err
 	}
 	if err != nil {
 		return nil, err

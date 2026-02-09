@@ -6,6 +6,7 @@ info:
 servers:
   - url: http://localhost:8000
     description: Development server
+
 paths:
   /api/sign-up:
     post:
@@ -27,6 +28,7 @@ paths:
                 $ref: '#/components/schemas/SignUpOutput'
         '400':
           description: Invalid input or user already exists
+
   /api/sign-in:
     post:
       tags:
@@ -47,8 +49,7 @@ paths:
                 $ref: '#/components/schemas/SignInOutput'
         '401':
           description: Invalid credentials
-          content:
-            status
+
   /api/refresh:
     post:
       tags:
@@ -69,6 +70,7 @@ paths:
                 $ref: '#/components/schemas/RefreshOutput'
         '401':
           description: Invalid refresh token
+
   /api/logout:
     post:
       tags:
@@ -85,6 +87,7 @@ paths:
           description: Logout successful
         '401':
           description: Invalid refresh token
+
   /api/logout-all:
     post:
       tags:
@@ -97,6 +100,7 @@ paths:
           description: Logout successful
         '401':
           description: Unauthorized
+
   /api/list:
     post:
       tags:
@@ -130,17 +134,6 @@ paths:
       summary: Get all lists for a user
       security:
         - BearerAuth: []
-      parameters:
-        - in: query
-          name: limit
-          schema:
-            type: integer
-          description: Number of items to return
-        - in: query
-          name: offset
-          schema:
-            type: integer
-          description: Offset for pagination
       responses:
         '200':
           description: A list of lists
@@ -152,6 +145,7 @@ paths:
                   $ref: '#/components/schemas/List'
         '401':
           description: Unauthorized
+
   /api/list/{id}:
     get:
       tags:
@@ -220,14 +214,250 @@ paths:
           schema:
             type: integer
       responses:
-        '204':
+        '200':
           description: List deleted successfully
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: integer
         '401':
           description: Unauthorized
         '404':
           description: List not found
 
+  /api/category:
+    post:
+      tags:
+        - Categories
+      summary: Create a new category
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryCreateInput'
+      responses:
+        '200':
+          description: Category created successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: Wrong input
+        '500':
+          description: Failed to create category
+
+  /api/category/{id}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by ID
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Category details
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found
+    put:
+      tags:
+        - Categories
+      summary: Update category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateInput'
+      responses:
+        '200':
+          description: Category updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: Wrong input
+        '500':
+          description: Failed to update category
+    delete:
+      tags:
+        - Categories
+      summary: Delete category
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: Category deleted successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CategoryDeleteResponse'
+        '404':
+          description: Category not found
+
+  /api/category/{id}/order:
+    patch:
+      tags:
+        - Categories
+      summary: Update category order within its level
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateOrderInput'
+      responses:
+        '200':
+          description: Category order updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: Wrong input
+        '500':
+          description: Failed to update category order
+
+  /api/category/{id}/status:
+    patch:
+      tags:
+        - Categories
+      summary: Update category active status
+      parameters:
+        - in: path
+          name: id
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CategoryUpdateStatusInput'
+      responses:
+        '200':
+          description: Category status updated successfully
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '400':
+          description: Wrong input
+        '500':
+          description: Failed to update category status
+
+  /api/category/tree:
+    get:
+      tags:
+        - Categories
+      summary: Get full category tree
+      responses:
+        '200':
+          description: Category tree
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/CategoryTreeNode'
+        '500':
+          description: Failed to get category tree
+
+  /api/category/flat:
+    get:
+      tags:
+        - Categories
+      summary: Get flat list of categories
+      responses:
+        '200':
+          description: Flat category list
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Category'
+
+  /api/category/slug/{slug}:
+    get:
+      tags:
+        - Categories
+      summary: Get category by slug
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Category details by slug
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Category'
+        '404':
+          description: Category not found
+
+  /api/category/slug/{slug}/products:
+    get:
+      tags:
+        - Categories
+      summary: Get products for category by slug (including nested)
+      parameters:
+        - in: path
+          name: slug
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: Products for category
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: object
+        '404':
+          description: Category not found
+
 components:
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     SignUpInput:
       type: object
@@ -242,11 +472,13 @@ components:
         - name
         - username
         - password
+
     SignUpOutput:
       type: object
       properties:
         id:
           type: integer
+
     SignInInput:
       type: object
       properties:
@@ -257,6 +489,7 @@ components:
       required:
         - username
         - password
+
     SignInOutput:
       type: object
       properties:
@@ -264,6 +497,7 @@ components:
           type: string
         refreshToken:
           type: string
+
     RefreshInput:
       type: object
       properties:
@@ -271,6 +505,7 @@ components:
           type: string
       required:
         - refreshToken
+
     RefreshOutput:
       type: object
       properties:
@@ -278,6 +513,7 @@ components:
           type: string
         refreshToken:
           type: string
+
     LogoutInput:
       type: object
       properties:
@@ -285,6 +521,7 @@ components:
           type: string
       required:
         - refreshToken
+
     List:
       type: object
       properties:
@@ -296,6 +533,7 @@ components:
           type: string
         user_id:
           type: integer
+
     ListInput:
       type: object
       properties:
@@ -305,7 +543,146 @@ components:
           type: string
       required:
         - title
-  securitySchemes:
-    BearerAuth:
-      type: http
-      scheme: bearer
+
+    CategoryCreateInput:
+      type: object
+      properties:
+        parentId:
+          type: integer
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+        isActive:
+          type: boolean
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        metaKeywords:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        level:
+          type: integer
+        path:
+          type: string
+          nullable: true
+
+    CategoryUpdateInput:
+      type: object
+      properties:
+        parent_id:
+          type: integer
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+        image_url:
+          type: string
+        display_order:
+          type: integer
+        is_active:
+          type: boolean
+        meta_title:
+          type: string
+        meta_description:
+          type: string
+        meta_keywords:
+          type: string
+        level:
+          type: integer
+
+    CategoryUpdateOrderInput:
+      type: object
+      properties:
+        level:
+          type: integer
+      required:
+        - level
+
+    CategoryUpdateStatusInput:
+      type: object
+      properties:
+        isActive:
+          type: boolean
+      required:
+        - isActive
+
+    Category:
+      type: object
+      properties:
+        id:
+          type: integer
+        parentId:
+          type: integer
+          nullable: true
+        name:
+          type: string
+        slug:
+          type: string
+        description:
+          type: string
+          nullable: true
+        imageUrl:
+          type: string
+          nullable: true
+        displayOrder:
+          type: integer
+        isActive:
+          type: boolean
+        metaTitle:
+          type: string
+          nullable: true
+        metaDescription:
+          type: string
+          nullable: true
+        metaKeywords:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+        level:
+          type: integer
+        path:
+          type: string
+          nullable: true
+
+    CategoryDeleteResponse:
+      type: object
+      properties:
+        id:
+          type: integer
+
+    CategoryTreeNode:
+      allOf:
+        - $ref: '#/components/schemas/Category'
+        - type: object
+          properties:
+            children:
+              type: array
+              items:
+                $ref: '#/components/schemas/CategoryTreeNode'

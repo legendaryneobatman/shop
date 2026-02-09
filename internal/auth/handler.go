@@ -1,7 +1,6 @@
 package auth
 
 import (
-	"errors"
 	"go-shop/internal/models"
 	"go-shop/pkg/webtool"
 	"net/http"
@@ -33,7 +32,6 @@ type Handler struct {
 	RToken      *RepositoryToken
 	service     *Service
 	middleware  *Middleware
-	errors      *Errors
 	userService IUserService
 }
 
@@ -42,14 +40,12 @@ func NewHandler(
 	userService IUserService,
 	rt *RepositoryToken,
 	ma *Middleware,
-	errors *Errors,
 ) *Handler {
 	return &Handler{
 		service:     service,
 		userService: userService,
 		RToken:      rt,
 		middleware:  ma,
-		errors:      errors,
 	}
 }
 
@@ -57,7 +53,7 @@ func (h *Handler) SignUp(c *gin.Context) *webtool.APIError {
 	var input SignInInput
 
 	if err := c.BindJSON(&input); err != nil {
-		return h.errors.UserAlreadyExists
+		return ErrUserAlreadyExists(err)
 	}
 
 	user, err := h.userService.CreateUser(&models.User{
@@ -66,9 +62,7 @@ func (h *Handler) SignUp(c *gin.Context) *webtool.APIError {
 		Password: input.Password,
 	})
 	if err != nil {
-		if errors.Is(err, h.errors.UserAlreadyExists.Error) {
-			return h.errors.UserAlreadyExists
-		}
+		return ErrUserAlreadyExists(err)
 	}
 
 	c.JSON(http.StatusOK, SignUpOutput{
@@ -80,14 +74,12 @@ func (h *Handler) SignIn(c *gin.Context) *webtool.APIError {
 	var input SignInInput
 
 	if err := c.BindJSON(&input); err != nil {
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 
 	token, err := h.service.Authenticate(input.Username, input.Password)
 	if err != nil {
-		if errors.Is(err, h.errors.InvalidCredentials.Error) {
-			return h.errors.InvalidCredentials
-		}
+		return ErrInvalidCredentials(err)
 	}
 
 	c.JSON(http.StatusOK, SignInOutput{
@@ -100,14 +92,11 @@ func (h *Handler) Refresh(c *gin.Context) *webtool.APIError {
 	var input RefreshInput
 
 	if err := c.BindJSON(&input); err != nil {
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 	tokenPair, err := h.service.RefreshTokens(input.RefreshToken)
 	if err != nil {
-		if errors.Is(err, h.errors.NoTokenFound.Error) {
-			return h.errors.NoTokenFound
-		}
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 
 	c.JSON(http.StatusOK, RefreshOutput{
@@ -120,14 +109,11 @@ func (h *Handler) Logout(c *gin.Context) *webtool.APIError {
 	var input LogoutInput
 
 	if err := c.BindJSON(&input); err != nil {
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 
 	if err := h.service.RevokeToken(input.RefreshToken); err != nil {
-		if errors.Is(err, h.errors.NoTokenFound.Error) {
-			return h.errors.NoTokenFound
-		}
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 	return nil
 }
@@ -135,14 +121,11 @@ func (h *Handler) LogoutAll(c *gin.Context) *webtool.APIError {
 	userID, err := h.middleware.GetUserIDCTX(c)
 
 	if err != nil {
-		return h.errors.UserUnauthorized
+		return ErrUserUnauthorized(err)
 	}
 
 	if err := h.service.RevokeAllTokens(userID); err != nil {
-		if errors.Is(err, h.errors.NoTokenFound.Error) {
-			return h.errors.NoTokenFound
-		}
-		return h.errors.InvalidCredentials
+		return ErrInvalidCredentials(err)
 	}
 	return nil
 }

@@ -15,14 +15,12 @@ type IAuthMiddleware interface {
 
 type Handler struct {
 	Service        *Service
-	errors         *Errors
 	authMiddleware IAuthMiddleware
 }
 
-func NewHandler(service *Service, errors *Errors, authMiddleware IAuthMiddleware) *Handler {
+func NewHandler(service *Service, authMiddleware IAuthMiddleware) *Handler {
 	return &Handler{
 		Service:        service,
-		errors:         errors,
 		authMiddleware: authMiddleware,
 	}
 }
@@ -40,17 +38,17 @@ func (h *Handler) InitRoutes(api *gin.RouterGroup) {
 func (h *Handler) CreateList(c *gin.Context) *webtool.APIError {
 	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		return h.errors.NoUserFound
+		return NoUserFound(err)
 	}
 
 	var input models.List
 	if err := c.BindJSON(&input); err != nil {
-		return h.errors.BadRequest
+		return BadRequest(err)
 	}
 
 	id, err := h.Service.Create(userID, input)
 	if err != nil {
-		return h.errors.CantCreate
+		return CantCreate(err)
 	}
 
 	c.JSON(http.StatusOK, map[string]interface{}{
@@ -63,12 +61,12 @@ func (h *Handler) CreateList(c *gin.Context) *webtool.APIError {
 func (h *Handler) GetLists(c *gin.Context) *webtool.APIError {
 	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		return h.errors.NoUserFound
+		return NoUserFound(err)
 	}
 
 	lists, err := h.Service.GetAll(userID)
 	if err != nil {
-		return h.errors.CantFindElements
+		return CantFindElements(err)
 	}
 
 	c.JSON(http.StatusOK, lists)
@@ -78,20 +76,20 @@ func (h *Handler) GetLists(c *gin.Context) *webtool.APIError {
 func (h *Handler) GetListWithPagination(c *gin.Context) *webtool.APIError {
 	userID, err := h.authMiddleware.GetUserIDCTX(c)
 	if err != nil {
-		return h.errors.NoUserFound
+		return NoUserFound(err)
 	}
 	limit, err := strconv.Atoi(c.Query("limit"))
 	if err != nil {
-		return h.errors.InvalidPagination
+		return InvalidPagination(err)
 	}
 	offset, err := strconv.Atoi(c.Query("offset"))
 	if err != nil {
-		return h.errors.InvalidPagination
+		return InvalidPagination(err)
 	}
 
 	list, err := h.Service.GetWithPagination(userID, limit, offset)
 	if err != nil {
-		return h.errors.CantFindElements
+		return CantFindElements(err)
 	}
 
 	c.JSON(http.StatusOK, list)
@@ -102,7 +100,7 @@ func (h *Handler) GetListWithPagination(c *gin.Context) *webtool.APIError {
 func (h *Handler) GetListByID(c *gin.Context) *webtool.APIError {
 	list, err := h.Service.GetByID(c.Param("id"))
 	if err != nil {
-		return h.errors.CantFindElements
+		return CantFindElements(err)
 	}
 
 	c.JSON(http.StatusOK, list)
@@ -113,11 +111,11 @@ func (h *Handler) GetListByID(c *gin.Context) *webtool.APIError {
 func (h *Handler) UpdateList(c *gin.Context) *webtool.APIError {
 	updatedList := models.List{}
 	if err := c.BindJSON(&updatedList); err != nil {
-		return h.errors.BadRequest
+		return BadRequest(err)
 	}
 	list, err := h.Service.Update(c.Param("id"), updatedList)
 	if err != nil {
-		return h.errors.CantFindElements
+		return CantFindElements(err)
 	}
 
 	c.JSON(http.StatusOK, list)
@@ -126,9 +124,13 @@ func (h *Handler) UpdateList(c *gin.Context) *webtool.APIError {
 }
 
 func (h *Handler) DeleteList(c *gin.Context) *webtool.APIError {
-	if err := h.Service.Delete(c.Param("id")); err != nil {
-		return h.errors.CantFindElements
+	params := []string{c.Param("id")}
+	ids, err := h.Service.Delete(params)
+	if err != nil {
+		return CantFindElements(err)
 	}
+
+	c.JSON(http.StatusOK, ids)
 
 	return nil
 }

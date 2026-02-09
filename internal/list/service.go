@@ -36,6 +36,6 @@ func (s *Service) GetWithPagination(userID int, limit int, offset int) ([]models
 	return s.repo.GetWithPagination(userID, limit, offset)
 }
 
-func (s *Service) Delete(listIDs []string) error {
+func (s *Service) Delete(listIDs []string) ([]string, error) {
 	return s.repo.Delete(listIDs)
 }

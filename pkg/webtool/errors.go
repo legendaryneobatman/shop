@@ -1,15 +1,21 @@
 package webtool
 
-import "errors"
-
 type APIError struct {
-	Error      error
-	HTTPStatus int
+	Code    int    `json:"code,omitempty"`
+	Message string `json:"message,omitempty"`
+	Source  error  `json:"source,omitempty"`
 }
 
-func NewAPIError(message string, status int) *APIError {
+func NewAPIError(message string, code int, source error) *APIError {
 	return &APIError{
-		Error:      errors.New(message),
-		HTTPStatus: status,
+		Code: code,
+		Message: message,
+		Source: source,
+	}
+}
+
+func MakeError(message string, code int) func(err error) *APIError {
+	return func (err error) *APIError {
+		return NewAPIError(message, code, err)
 	}
 }

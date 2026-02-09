@@ -52,28 +52,20 @@ CREATE TABLE lists
 CREATE TABLE categories
 (
     id               serial primary key,
-    parent_id        int references categories (id) on delete cascade, -- Иерархия категорий
+    parent_id        int references categories (id) on delete cascade,
     name             varchar(255)        not null,
     slug             varchar(255) unique not null,
     description      text,
     image_url        varchar(500),
-
-    -- Для сортировки и отображения
     display_order    int       default 0,
     is_active        bool      default true,
-
-    -- SEO
     meta_title       varchar(255),
     meta_description varchar(500),
     meta_keywords    varchar(500),
-
-    -- Технические поля
     created_at       timestamp default now(),
     updated_at       timestamp default now(),
-
-    -- Для иерархических запросов (опционально)
     level            int       default 0,
-    path             varchar(1000)                                     -- Путь вида "1/3/5" для быстрых запросов
+    path             varchar(1000)
 );
 
 create table products
@@ -119,19 +111,15 @@ create table brands
     logo_url         varchar(500),
     website_url      varchar(500),
 
-    -- статус
     is_active        boolean   default true,
-    is_featured      boolean   default false, -- для вывода в блоке "популярные бренды"
+    is_featured      boolean   default false,
 
-    -- для сортировки
     display_order    int       default 0,
 
-    -- seo
     meta_title       varchar(255),
     meta_description varchar(500),
     meta_keywords    varchar(500),
 
-    -- технические поля
     created_at       timestamp default now(),
     updated_at       timestamp default now()
 );
