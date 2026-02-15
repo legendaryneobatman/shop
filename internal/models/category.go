@@ -11,13 +11,13 @@ type Category struct {
 	ImageUrl        *string   `json:"imageUrl" db:"image_url"`
 	DisplayOrder    int       `json:"displayOrder" db:"display_order"`
 	IsActive        bool      `json:"isActive" db:"is_active"`
-	MetaTitle       *string    `json:"metaTitle" db:"meta_title"`
-	MetaDescription *string    `json:"metaDescription" db:"meta_description"`
-	MetaKeywords    *string    `json:"metaKeywords" db:"meta_keywords"`
+	MetaTitle       *string   `json:"metaTitle" db:"meta_title"`
+	MetaDescription *string   `json:"metaDescription" db:"meta_description"`
+	MetaKeywords    *string   `json:"metaKeywords" db:"meta_keywords"`
 	CreatedAt       time.Time `json:"createdAt" db:"created_at"`
 	UpdatedAt       time.Time `json:"updatedAt" db:"updated_at"`
 	Level           int       `json:"level" db:"level"`
-	Path            *string    `json:"path" db:"path"`
+	Path            *string   `json:"path" db:"path"`
 }
 
 type CategoryNode struct {

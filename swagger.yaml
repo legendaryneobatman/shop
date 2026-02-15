@@ -94,7 +94,7 @@ paths:
         - Auth
       summary: Logout from all devices
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Logout successful
@@ -107,7 +107,7 @@ paths:
         - Lists
       summary: Create a new list
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -133,7 +133,7 @@ paths:
         - Lists
       summary: Get all lists for a user
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       responses:
         '200':
           description: A list of lists
@@ -152,7 +152,7 @@ paths:
         - Lists
       summary: Get a list by ID
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -175,7 +175,7 @@ paths:
         - Lists
       summary: Update a list
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -206,7 +206,7 @@ paths:
         - Lists
       summary: Delete a list
       security:
-        - BearerAuth: []
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -232,6 +232,8 @@ paths:
       tags:
         - Categories
       summary: Create a new category
+      security:
+        - BearerAuth: [ ]
       requestBody:
         required: true
         content:
@@ -247,6 +249,8 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           description: Wrong input
+        '401':
+          description: Unauthorized
         '500':
           description: Failed to create category
 
@@ -255,6 +259,8 @@ paths:
       tags:
         - Categories
       summary: Get category by ID
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -268,12 +274,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
         '404':
           description: Category not found
     put:
       tags:
         - Categories
       summary: Update category
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -295,12 +305,16 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           description: Wrong input
+        '401':
+          description: Unauthorized
         '500':
           description: Failed to update category
     delete:
       tags:
         - Categories
       summary: Delete category
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -314,6 +328,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CategoryDeleteResponse'
+        '401':
+          description: Unauthorized
         '404':
           description: Category not found
 
@@ -322,6 +338,8 @@ paths:
       tags:
         - Categories
       summary: Update category order within its level
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -343,6 +361,8 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           description: Wrong input
+        '401':
+          description: Unauthorized
         '500':
           description: Failed to update category order
 
@@ -351,6 +371,8 @@ paths:
       tags:
         - Categories
       summary: Update category active status
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: id
@@ -372,6 +394,8 @@ paths:
                 $ref: '#/components/schemas/Category'
         '400':
           description: Wrong input
+        '401':
+          description: Unauthorized
         '500':
           description: Failed to update category status
 
@@ -380,6 +404,8 @@ paths:
       tags:
         - Categories
       summary: Get full category tree
+      security:
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Category tree
@@ -389,6 +415,8 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/CategoryTreeNode'
+        '401':
+          description: Unauthorized
         '500':
           description: Failed to get category tree
 
@@ -397,6 +425,8 @@ paths:
       tags:
         - Categories
       summary: Get flat list of categories
+      security:
+        - BearerAuth: [ ]
       responses:
         '200':
           description: Flat category list
@@ -406,12 +436,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
 
   /api/category/slug/{slug}:
     get:
       tags:
         - Categories
       summary: Get category by slug
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: slug
@@ -425,6 +459,8 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Category'
+        '401':
+          description: Unauthorized
         '404':
           description: Category not found
 
@@ -433,12 +469,46 @@ paths:
       tags:
         - Categories
       summary: Get products for category by slug (including nested)
+      security:
+        - BearerAuth: [ ]
       parameters:
         - in: path
           name: slug
           required: true
           schema:
             type: string
+        - in: query
+          name: limit
+          required: false
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+          description: Max products per page (default 20)
+        - in: query
+          name: offset
+          required: false
+          schema:
+            type: integer
+            minimum: 0
+          description: Offset for pagination
+        - in: query
+          name: sort
+          required: false
+          schema:
+            type: string
+            enum: [ price_asc, price_desc, new, rating ]
+          description: Sort by price, newness or rating
+        - in: query
+          name: brandId
+          required: false
+          schema:
+            type: array
+            items:
+              type: integer
+          style: form
+          explode: true
+          description: Filter by one or more brand IDs (?brandId=1&brandId=2)
       responses:
         '200':
           description: Products for category
@@ -448,6 +518,8 @@ paths:
                 type: array
                 items:
                   type: object
+        '401':
+          description: Unauthorized
         '404':
           description: Category not found
 

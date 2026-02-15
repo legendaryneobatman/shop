@@ -32,7 +32,6 @@ func (h *Handler) InitRoutes(r *gin.RouterGroup) {
 	group.GET("/tree", webtool.MakeHandler(h.GetTree))
 	group.GET("/flat", webtool.MakeHandler(h.GetFlat))
 	group.GET("/slug/:slug", webtool.MakeHandler(h.GetBySlug))
-	group.GET("/slug/:slug/products", webtool.MakeHandler(h.GetProductsBySlug))
 }
 
 // Группа 1: Управление категориями (Админка / Бэкенд)
@@ -76,7 +75,6 @@ func (h *Handler) Get(c *gin.Context) *webtool.APIError {
 	c.JSON(http.StatusOK, ToGetResponseDTO(category))
 	return nil
 }
-
 func (h *Handler) Update(c *gin.Context) *webtool.APIError {
 	var input UpdateRequestDTO
 	err := c.BindJSON(&input)
@@ -156,7 +154,12 @@ func (h *Handler) UpdateStatus(c *gin.Context) *webtool.APIError {
 //GET /api/category/tree — Самый важный эндпоинт. Получение всего дерева категорий в виде вложенной структуры (Nested Set). Ответ: Массив корневых категорий, каждая из которых содержит массив своих дочерних категорий (рекурсивно). Только активные (is_active=true). Для чего на фронте: Построение главного мега-меню, выпадающих списков в навигации, бокового меню фильтров.
 //GET /api/category/flat — Получение списка категорий в виде плоского массива с указанием level и parent_id. Для чего: Для простых выпадающих списков в админке (при выборе родительской категории), для построения breadcrumbs (хлебных крошек) на клиенте.
 //GET /api/category/{slug} — Получение данных категории по её SEO-ссылке (slug). Что возвращать: Поля категории + дополнительные данные для страницы каталога: Список дочерних категорий (для поднавигации на странице). Breadcrumbs (Хлебные крошки): Массив [{name: "Главная", slug: "/"}, {name: "Электроника", slug: "/elektronika"}, ...]. Легко строится из поля path. Прикрепленные фильтры/атрибуты (если у вас есть такая связь в БД). SEO-теги (meta_title, meta_description).
-//GET /api/category/{slug}/products — Получение товаров этой категории. Критически важно: Товары должны включать товары из всех вложенных дочерних категорий. Пользователь, зайдя в "Электроника", ожидает увидеть и телефоны, и ноутбуки.Логика: Используйте поле path для эффективного поиска. Запрос типа: WHERE category.path LIKE '{current_category_path}%'.Дополнение: Должен поддерживать пагинацию, сортировку (по цене, новизне, рейтингу) и фильтрацию по брендам/атрибутам.
+//GET /api/category/{slug}/products — Получение товаров этой категории.
+//Критически важно: Товары должны включать товары из всех вложенных дочерних категорий.
+//Пользователь, зайдя в "Электроника", ожидает увидеть и телефоны, и ноутбуки.
+//Логика: Используйте поле path для эффективного поиска.
+//Запрос типа: WHERE category.path LIKE '{current_category_path}%'.
+//Дополнение: Должен поддерживать пагинацию, сортировку (по цене, новизне, рейтингу) и фильтрацию по брендам/атрибутам.
 
 func (h *Handler) GetTree(c *gin.Context) *webtool.APIError {
 	tree, err := h.service.GetCategoryTree()
@@ -168,7 +171,6 @@ func (h *Handler) GetTree(c *gin.Context) *webtool.APIError {
 
 	return nil
 }
-
 func (h *Handler) GetFlat(c *gin.Context) *webtool.APIError {
 	categories, err := h.service.GetCategories()
 	if err != nil {
@@ -179,7 +181,6 @@ func (h *Handler) GetFlat(c *gin.Context) *webtool.APIError {
 
 	return nil
 }
-
 func (h *Handler) GetBySlug(c *gin.Context) *webtool.APIError {
 	slug := c.Param("slug")
 
@@ -192,9 +193,5 @@ func (h *Handler) GetBySlug(c *gin.Context) *webtool.APIError {
 	}
 
 	c.JSON(http.StatusOK, ToGetBySlugResponseDTO(category))
-	return nil
-}
-
-func (h *Handler) GetProductsBySlug(c *gin.Context) *webtool.APIError {
 	return nil
 }

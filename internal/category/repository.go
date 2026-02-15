@@ -5,7 +5,6 @@ import (
 	"errors"
 	"fmt"
 	"go-shop/internal/models"
-	"go-shop/pkg/schema"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
@@ -205,14 +204,9 @@ func (r *Repository) updateLevelAndPathRecursive(tx *sqlx.Tx, id int, level int,
 }
 
 func (r *Repository) Update(input *models.Category) (*models.Category, error) {
-	//oldCategory, err := r.GetByID(input.ID)
-	//if err != nil {
-	//	logrus.Errorf("Error when searching old category for update: %s", err.Error())
-	//	return nil, err
-	//}
 	query := fmt.Sprintf(
 		`
-				UPDATE %s
+				UPDATE categories
 				SET 
 				    parent_id= :parent_id,
     				name= :name,
@@ -230,7 +224,6 @@ func (r *Repository) Update(input *models.Category) (*models.Category, error) {
 				          display_order, is_active, meta_title, meta_description,
 				          meta_keywords, created_at, updated_at, level, path
 		`,
-		schema.CategoryTable,
 	)
 	rows, err := r.db.NamedQuery(query, input)
 	if err != nil {

@@ -5,6 +5,7 @@ import (
 	"go-shop/internal/category"
 	"go-shop/internal/docs"
 	"go-shop/internal/list"
+	"go-shop/internal/product"
 	"go-shop/internal/user"
 
 	"github.com/gin-gonic/gin"
@@ -24,11 +25,13 @@ func (h *Handler) Init(router *gin.Engine) {
 	userRepo := user.NewRepository(h.db)
 	listRepo := list.NewRepository(h.db)
 	categoryRepo := category.NewRepository(h.db)
+	productRepo := product.NewRepository(h.db, categoryRepo)
 
 	userServ := user.NewService(userRepo)
 	authServ := auth.NewAuthService(userRepo, tokenRepo)
 	listServ := list.NewListService(listRepo)
 	categoryServ := category.NewService(categoryRepo)
+	productServ := product.NewService(productRepo)
 
 	authMiddleware := auth.NewAuthMiddleware(authServ)
 
@@ -40,9 +43,11 @@ func (h *Handler) Init(router *gin.Engine) {
 	authCtrl := auth.NewHandler(authServ, userServ, tokenRepo, authMiddleware)
 	listCtrl := list.NewHandler(listServ, authMiddleware)
 	categoryCtrl := category.NewHandler(categoryServ)
+	productCtrl := product.NewHandler(productServ)
 
 	authCtrl.InitRoutes(apiPublicGroup)
 	listCtrl.InitRoutes(apiProtectedGroup)
 	docsCtrl.InitRoutes(authGroup)
 	categoryCtrl.InitRoutes(apiProtectedGroup)
+	productCtrl.InitRoutes(apiProtectedGroup)
 }

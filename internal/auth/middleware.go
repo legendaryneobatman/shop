@@ -49,7 +49,6 @@ func (h *Middleware) getAccessTokenFromCookies(c *gin.Context) string {
 }
 func (h *Middleware) getAccessTokenFromHeader(c *gin.Context) string {
 	header := c.GetHeader(authorizationHeader)
-	logrus.Debugln("header", header)
 	accessToken := strings.TrimPrefix(header, "Bearer ")
 	if accessToken == "" {
 		logrus.Errorf("Empty auth accessToken")
