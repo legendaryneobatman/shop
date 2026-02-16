@@ -7,6 +7,7 @@ import (
 	"go-shop/internal/models"
 
 	"github.com/jmoiron/sqlx"
+	"github.com/lib/pq"
 	"github.com/sirupsen/logrus"
 )
 
@@ -75,6 +76,26 @@ func (r *Repository) SlugExists(slug string) (bool, error) {
 	}
 
 	return exists, nil
+}
+func (r *Repository) CheckSlugsExist(slugs []string) (map[string]bool, error) {
+	if len(slugs) == 0 {
+		return make(map[string]bool), nil
+	}
+
+	query := `SELECT slug FROM categories WHERE slug = ANY($1)`
+
+	var existingSlugs []string
+	err := r.db.Select(&existingSlugs, query, pq.Array(slugs))
+	if err != nil {
+		return nil, fmt.Errorf("failed to check slugs: %w", err)
+	}
+
+	result := make(map[string]bool, len(existingSlugs))
+	for _, slug := range existingSlugs {
+		result[slug] = true
+	}
+
+	return result, nil
 }
 func (r *Repository) GetByID(id int) (*models.Category, error) {
 	query := `
@@ -289,4 +310,17 @@ func (r *Repository) GetBySlug(slug string) (*models.Category, error) {
 	}
 
 	return &category, nil
+}
+
+func (r *Repository) Delete(ID int) (int, error) {
+	var _ID int
+	query := fmt.Sprintf("DELETE FROM categories WHERE id=$1 RETURNING id")
+	err := r.db.QueryRow(query, ID).Scan(&_ID)
+
+	if err != nil {
+		logrus.Errorf("error when scan row for deleted category: %v", err)
+		return 0, err
+	}
+
+	return _ID, nil
 }

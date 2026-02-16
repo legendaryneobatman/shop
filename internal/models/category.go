@@ -25,3 +25,8 @@ type CategoryNode struct {
 
 	Children []*CategoryNode `json:"children"`
 }
+
+type CategorySlugExists struct {
+	Exists bool
+	Variants []string
+}

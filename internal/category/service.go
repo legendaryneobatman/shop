@@ -80,8 +80,13 @@ func (r *Service) UpdateCategory(input *models.Category) (*models.Category, erro
 	return category, nil
 }
 func (r *Service) DeleteCategory(input *models.Category) (*models.Category, error) {
+	ID, err := r.repository.Delete(input.ID)
+	if err != nil {
+		logrus.Errorf("cant delete %s", err.Error())
+		return nil, err
+	}
 
-	return &models.Category{}, nil
+	return &models.Category{ID: ID}, nil
 }
 func (r *Service) UpdateOrder(input *models.Category) (*models.Category, error) {
 	return &models.Category{}, nil
@@ -114,6 +119,45 @@ func (r *Service) GetCategories() ([]models.Category, error) {
 
 func (r *Service) GetCategoryBySlug(slug string) (*models.Category, error) {
 	category, err := r.repository.GetBySlug(slug)
-	if err != nil {return nil, err}
+	if err != nil {
+		return nil, err
+	}
 	return category, nil
+}
+
+func (r *Service) CheckSlug(input *models.Category) (*models.CategorySlugExists, error) {
+	const variantsCount = 10
+	exists, err := r.repository.SlugExists(input.Slug)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check slug uniqueness: %w", err)
+	}
+	if !exists {
+		return &models.CategorySlugExists{Exists: false, Variants: make([]string, 0)}, nil
+	}
+	variants, err := r.generateUniqueSlugVariants(input.Slug, variantsCount)
+
+	return &models.CategorySlugExists{Exists: true, Variants: variants}, nil
+}
+func (r *Service) generateUniqueSlugVariants(slug string, count int) ([]string, error) {
+	candidates := make([]string, count*3)
+	for i := 0; i < len(candidates); i++ {
+		candidates[i] = fmt.Sprintf("%s-%d", slug, i+1)
+	}
+
+	existingMap, err := r.repository.CheckSlugsExist(candidates)
+	if err != nil {
+		return nil, fmt.Errorf("failed to check slugs: %w", err)
+	}
+
+	variants := make([]string, 0, count)
+	for _, candidate := range candidates {
+		if !existingMap[candidate] {
+			variants = append(variants, candidate)
+			if len(variants) >= count {
+				break
+			}
+		}
+	}
+
+	return variants, nil
 }

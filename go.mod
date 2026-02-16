@@ -11,6 +11,7 @@ require (
 	github.com/jackc/pgx/v5 v5.8.0
 	github.com/jmoiron/sqlx v1.4.0
 	github.com/joho/godotenv v1.5.1
+	github.com/lib/pq v1.10.9
 	github.com/sirupsen/logrus v1.9.4
 	github.com/spf13/viper v1.21.0
 	golang.org/x/crypto v0.47.0

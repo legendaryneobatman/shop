@@ -254,6 +254,32 @@ paths:
         '500':
           description: Failed to create category
 
+  /api/category/slug:
+    post:
+      tags:
+        - Categories
+      summary: Checks slug for uniqueness
+      security:
+        - BearerAuth: [ ]
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CheckSlugRequestDTO'
+      responses:
+        '200':
+          description: Successfully checked slug for exists
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CheckSlugResponseDTO'
+        '400':
+          description: Wrong input
+        '401':
+          description: Unauthorized
+
+
   /api/category/{id}:
     get:
       tags:
@@ -657,6 +683,25 @@ components:
           type: string
           nullable: true
 
+    CheckSlugRequestDTO:
+      type: object
+      properties:
+        slug:
+          type: string
+          required: true
+
+    CheckSlugResponseDTO:
+      type: object
+      properties:
+        exists:
+          type: boolean
+        variants:
+          type: array
+          items:
+            type: string
+          nullable: true
+
+
     CategoryUpdateInput:
       type: object
       properties:
@@ -702,6 +747,9 @@ components:
 
     Category:
       type: object
+      required:
+        - id
+        - parentId
       properties:
         id:
           type: integer

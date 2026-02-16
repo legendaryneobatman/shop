@@ -23,6 +23,7 @@ func (h *Handler) InitRoutes(r *gin.RouterGroup) {
 	group := r.Group("/category")
 
 	group.POST("", webtool.MakeHandler(h.Create))
+	group.POST("/slug", webtool.MakeHandler(h.CheckSlug))
 	group.GET("/:id", webtool.MakeHandler(h.Get))
 	group.PUT("/:id", webtool.MakeHandler(h.Update))
 	group.DELETE("/:id", webtool.MakeHandler(h.Delete))
@@ -58,6 +59,19 @@ func (h *Handler) Create(c *gin.Context) *webtool.APIError {
 	}
 
 	c.JSON(http.StatusOK, ToCreateResponseDTO(category))
+	return nil
+}
+func (h *Handler) CheckSlug(c *gin.Context) *webtool.APIError {
+	var input CheckSlugRequestDTO
+	err := c.BindJSON(&input)
+	if err != nil {
+		return BadInput(err)
+	}
+
+	result, err := h.service.CheckSlug(CheckSlugRequestDTOToCategory(&input))
+
+
+	c.JSON(http.StatusOK, ToCheckSlugResponseDTO(result))
 	return nil
 }
 func (h *Handler) Get(c *gin.Context) *webtool.APIError {

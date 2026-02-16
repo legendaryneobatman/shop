@@ -6,20 +6,15 @@ import (
 )
 
 type CreateRequestDTO struct {
-	ParentID        *int      `json:"parentId"`
-	Name            string    `json:"name"`
-	Slug            string    `json:"slug"`
-	Description     *string   `json:"description"`
-	ImageUrl        *string   `json:"imageUrl"`
-	DisplayOrder    int       `json:"displayOrder"`
-	IsActive        bool      `json:"isActive"`
-	MetaTitle       *string   `json:"metaTitle"`
-	MetaDescription *string   `json:"metaDescription"`
-	MetaKeywords    *string   `json:"metaKeywords"`
-	CreatedAt       time.Time `json:"createdAt"`
-	UpdatedAt       time.Time `json:"updatedAt"`
-	Level           int       `json:"level"`
-	Path            *string   `json:"path"`
+	ParentID        *int    `json:"parentId"`
+	Name            string  `json:"name"`
+	Slug            string  `json:"slug"`
+	Description     *string `json:"description"`
+	ImageUrl        *string `json:"imageUrl"`
+	IsActive        bool    `json:"isActive"`
+	MetaTitle       *string `json:"metaTitle"`
+	MetaDescription *string `json:"metaDescription"`
+	MetaKeywords    *string `json:"metaKeywords"`
 }
 type CreateResponseDTO struct {
 	ID              int       `json:"id"`
@@ -46,15 +41,10 @@ func CreateRequestDTOToCategory(input *CreateRequestDTO) *models.Category {
 		Slug:            input.Slug,
 		Description:     input.Description,
 		ImageUrl:        input.ImageUrl,
-		DisplayOrder:    input.DisplayOrder,
 		IsActive:        input.IsActive,
 		MetaTitle:       input.MetaTitle,
 		MetaDescription: input.MetaDescription,
 		MetaKeywords:    input.MetaKeywords,
-		CreatedAt:       input.CreatedAt,
-		UpdatedAt:       input.UpdatedAt,
-		Level:           input.Level,
-		Path:            input.Path,
 	}
 }
 func ToCreateResponseDTO(input *models.Category) *CreateResponseDTO {
@@ -75,6 +65,23 @@ func ToCreateResponseDTO(input *models.Category) *CreateResponseDTO {
 		Level:           input.Level,
 		Path:            input.Path,
 	}
+}
+
+type CheckSlugRequestDTO struct {
+	Slug string `json:"slug" binding:"required"`
+}
+type CheckSlugResponseDTO struct {
+	Exists   bool     `json:"exists"`
+	Variants []string `json:"recommendations"`
+}
+
+func CheckSlugRequestDTOToCategory(input *CheckSlugRequestDTO) *models.Category {
+	return &models.Category{
+		Slug: input.Slug,
+	}
+}
+func ToCheckSlugResponseDTO(input *models.CategorySlugExists) *CheckSlugResponseDTO {
+	return &CheckSlugResponseDTO{Exists: input.Exists, Variants: input.Variants}
 }
 
 type GetResponseDTO struct {
@@ -292,7 +299,7 @@ func ToUpdateStatusResponseDTO(input *models.Category) *UpdateStatusResponseDTO 
 	}
 }
 
-type GetBySlugRequestDTO struct {}
+type GetBySlugRequestDTO struct{}
 type GetBySlugResponseDTO struct {
 	ID              int       `json:"id"`
 	ParentID        *int      `json:"parentId"`
@@ -310,6 +317,7 @@ type GetBySlugResponseDTO struct {
 	Level           int       `json:"level"`
 	Path            *string   `json:"path"`
 }
+
 func ToGetBySlugResponseDTO(input *models.Category) *GetBySlugResponseDTO {
 	return &GetBySlugResponseDTO{
 		ID:              input.ID,
