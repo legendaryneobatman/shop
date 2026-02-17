@@ -58,7 +58,7 @@ func (h *Handler) Create(c *gin.Context) *webtool.APIError {
 		return CantCreate(err)
 	}
 
-	c.JSON(http.StatusOK, ToCreateResponseDTO(category))
+	c.JSON(http.StatusCreated, ToCreateResponseDTO(category))
 	return nil
 }
 func (h *Handler) CheckSlug(c *gin.Context) *webtool.APIError {

@@ -65,7 +65,7 @@ func (h *Handler) SignUp(c *gin.Context) *webtool.APIError {
 		return ErrUserAlreadyExists(err)
 	}
 
-	c.JSON(http.StatusOK, SignUpOutput{
+	c.JSON(http.StatusCreated, SignUpOutput{
 		ID: user.ID,
 	})
 	return nil

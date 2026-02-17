@@ -51,7 +51,7 @@ func (h *Handler) CreateList(c *gin.Context) *webtool.APIError {
 		return CantCreate(err)
 	}
 
-	c.JSON(http.StatusOK, map[string]interface{}{
+	c.JSON(http.StatusCreated, map[string]interface{}{
 		"id": id,
 	})
 

@@ -20,7 +20,7 @@ paths:
             schema:
               $ref: '#/components/schemas/SignUpInput'
       responses:
-        '200':
+        '201':
           description: User created successfully
           content:
             application/json:
@@ -115,7 +115,7 @@ paths:
             schema:
               $ref: '#/components/schemas/ListInput'
       responses:
-        '200':
+        '201':
           description: List created successfully
           content:
             application/json:
@@ -241,7 +241,7 @@ paths:
             schema:
               $ref: '#/components/schemas/CategoryCreateInput'
       responses:
-        '200':
+        '201':
           description: Category created successfully
           content:
             application/json:
