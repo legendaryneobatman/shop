@@ -3,7 +3,7 @@ package category
 import (
 	"errors"
 	"fmt"
-	"go-shop/internal/models"
+	"shop/internal/models"
 
 	"github.com/sirupsen/logrus"
 )

@@ -1,12 +1,12 @@
 package bootstrap
 
 import (
-	"go-shop/internal/auth"
-	"go-shop/internal/category"
-	"go-shop/internal/docs"
-	"go-shop/internal/list"
-	"go-shop/internal/product"
-	"go-shop/internal/user"
+	"shop/internal/auth"
+	"shop/internal/category"
+	"shop/internal/docs"
+	"shop/internal/list"
+	"shop/internal/product"
+	"shop/internal/user"
 
 	"github.com/gin-gonic/gin"
 	"github.com/jmoiron/sqlx"

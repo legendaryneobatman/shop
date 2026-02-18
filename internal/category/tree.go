@@ -1,6 +1,6 @@
 package category
 
-import "go-shop/internal/models"
+import "shop/internal/models"
 
 func buildTree(list []models.Category) []*models.CategoryNode {
 	nodeMap := make(map[int]*models.CategoryNode)

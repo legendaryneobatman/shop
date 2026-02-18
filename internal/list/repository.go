@@ -2,12 +2,12 @@ package list
 
 import (
 	"fmt"
-	"go-shop/internal/models"
+	"shop/internal/models"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"
 
-	"go-shop/pkg/schema"
+	"shop/pkg/schema"
 )
 
 type Repository struct {

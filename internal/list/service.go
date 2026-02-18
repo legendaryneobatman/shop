@@ -1,6 +1,6 @@
 package list
 
-import "go-shop/internal/models"
+import "shop/internal/models"
 
 type IService interface {
 	Create(userID int, list models.List) (int, error)

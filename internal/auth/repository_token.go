@@ -2,8 +2,8 @@ package auth
 
 import (
 	"fmt"
-	"go-shop/internal/models"
-	"go-shop/pkg/schema"
+	"shop/internal/models"
+	"shop/pkg/schema"
 
 	"github.com/jmoiron/sqlx"
 	"github.com/sirupsen/logrus"

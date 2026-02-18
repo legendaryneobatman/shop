@@ -1,7 +1,7 @@
 package category
 
 import (
-	"go-shop/internal/models"
+	"shop/internal/models"
 	"time"
 )
 

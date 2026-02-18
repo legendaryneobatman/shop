@@ -2,8 +2,8 @@ package category
 
 import (
 	"errors"
-	"go-shop/internal/models"
-	"go-shop/pkg/webtool"
+	"shop/internal/models"
+	"shop/pkg/webtool"
 	"net/http"
 	"strconv"
 

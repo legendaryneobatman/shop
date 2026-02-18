@@ -1,8 +1,8 @@
 package main
 
 import (
-	shop "go-shop"
-	"go-shop/internal/bootstrap"
+	shop "shop"
+	"shop/internal/bootstrap"
 	"os"
 
 	"github.com/gin-contrib/cors"
@@ -43,7 +43,9 @@ func main() {
 
 	server := new(shop.Server)
 	if err := server.Run(viper.GetString("port"), router); err != nil {
-		logrus.Fatalf("error occured while running http server: %s", err.Error())
+		logrus.Fatalf("error occurred while running http server: %s", err.Error())
+	} else {
+		logrus.Infoln("Server started on port: ", os.Getenv("APP_HOST_PORT"))
 	}
 }
 
@@ -51,5 +53,15 @@ func initConfig() error {
 	viper.AddConfigPath("internal/configs")
 	viper.SetConfigName("config")
 	viper.SetConfigType("yml")
+	viper.AutomaticEnv()
+
+
+
+	for _, key := range viper.AllKeys() {
+		val := viper.GetString(key)
+		expanded := os.ExpandEnv(val)
+		viper.Set(key, expanded)
+	}
+
 	return viper.ReadInConfig()
 }

@@ -1,7 +1,7 @@
 package user
 
 import (
-	"go-shop/pkg/webtool"
+	"shop/pkg/webtool"
 
 	"github.com/gin-gonic/gin"
 )

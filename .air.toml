@@ -20,8 +20,3 @@ level = "debug"  # Включаем детальное логирование
 
 [misc]
 clean_on_exit = true
-
-[proxy]
-enabled = true
-proxy_port = 3000
-app_port = 8000

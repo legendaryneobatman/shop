@@ -1,9 +1,9 @@
 package auth
 
 import (
-	"go-shop/internal/models"
-	"go-shop/pkg/webtool"
 	"net/http"
+	"shop/internal/models"
+	"shop/pkg/webtool"
 
 	"github.com/gin-gonic/gin"
 )
@@ -50,7 +50,7 @@ func NewHandler(
 }
 
 func (h *Handler) SignUp(c *gin.Context) *webtool.APIError {
-	var input SignInInput
+	var input SignUpInput
 
 	if err := c.BindJSON(&input); err != nil {
 		return ErrUserAlreadyExists(err)

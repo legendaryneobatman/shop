@@ -1,7 +1,7 @@
 package category
 
 import (
-	"go-shop/pkg/webtool"
+	"shop/pkg/webtool"
 	"net/http"
 )
 

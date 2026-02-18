@@ -2,9 +2,9 @@ package main
 
 import (
 	"fmt"
-	repo2 "go-shop/internal/list"
-	"go-shop/internal/models"
-	entity2 "go-shop/internal/user"
+	repo2 "shop/internal/list"
+	"shop/internal/models"
+	entity2 "shop/internal/user"
 	"log"
 	"os"
 

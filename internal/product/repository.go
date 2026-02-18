@@ -2,7 +2,7 @@ package product
 
 import (
 	"fmt"
-	"go-shop/internal/models"
+	"shop/internal/models"
 
 	"github.com/jmoiron/sqlx"
 )

@@ -10,7 +10,6 @@ type SignUpOutput struct {
 }
 
 type SignInInput struct {
-	Name     string `json:"name,omitempty"`
 	Username string `json:"username" binding:"required" json:"username"`
 	Password string `json:"password" binding:"required" json:"password"`
 }
